@@ -1,0 +1,446 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+.header {
+    background: linear-gradient(135deg, #104989 0%, #0a3570 100%);
+    color: white;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.header h1 i {
+    font-size: 1.5rem;
+}
+
+.header p {
+    opacity: 0.9;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.header p i {
+    font-size: 1rem;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 1rem auto;
+    padding: 0 1rem;
+    height: calc(100vh - 120px);
+}
+
+.tree-panel {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.tree-header {
+    background: #f8f9fa;
+    padding: 1rem 1.2rem;
+    border-bottom: 2px solid #EE761C;
+    flex-shrink: 0;
+}
+
+.tree-header h2 {
+    color: #104989;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tree-header h2 i {
+    color: #EE761C;
+    font-size: 1.2rem;
+}
+
+.tree-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    min-height: 0;
+}
+
+.tree {
+    font-size: 0.95rem;
+}
+
+.tree ul {
+    list-style: none;
+    padding-left: 1.2rem;
+}
+
+.tree li {
+    margin: 0.3rem 0;
+}
+
+.tree .node-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.5rem 0.6rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    background: white;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.tree .node-wrapper:hover {
+    background: #f8f9fa;
+    transform: translateX(4px);
+    border-color: #e9ecef;
+}
+
+.tree .node-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.9rem;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+/* Иконки для папок */
+.tree .dir .node-name i {
+    color: #FFC107;
+    font-size: 1.1rem;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+/* Иконки для файлов */
+.tree .file .node-name i {
+    font-size: 1rem;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+/* Цвета иконок для разных типов файлов */
+.node-wrapper.video .node-name i {
+    color: #dc3545;
+}
+
+.node-wrapper.pdf .node-name i {
+    color: #dc3545;
+}
+
+.node-wrapper.image .node-name i {
+    color: #28a745;
+}
+
+.node-wrapper.document .node-name i {
+    color: #007bff;
+}
+
+.node-wrapper.presentation .node-name i {
+    color: #fd7e14;
+}
+
+.node-wrapper.spreadsheet .node-name i {
+    color: #20c997;
+}
+
+/* Стили для текста */
+.tree .dir .node-name span {
+    color: #104989;
+    font-weight: 600;
+    flex: 1;
+}
+
+.tree .file .node-name span {
+    color: #2c3e50;
+    flex: 1;
+}
+
+.tree .node-name:hover span {
+    text-decoration: underline;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading-text {
+    color: #EE761C;
+    font-style: italic;
+    margin-left: 8px;
+    font-size: 0.8rem;
+}
+
+.loading-text i {
+    margin-right: 4px;
+}
+
+.error-message {
+    color: #dc3545;
+    background: #f8d7da;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 4px solid #dc3545;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.error-message i {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+/* Стили для открытой папки */
+.tree .dir .node-name i.fa-folder-open {
+    color: #EE761C;
+}
+
+/* Анимация загрузки */
+.fa-spinner {
+    animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Стили для скроллбара */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #EE761C;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #104989;
+}
+
+/* ==================== */
+/* МОБИЛЬНАЯ АДАПТАЦИЯ */
+/* ==================== */
+
+@media (max-width: 768px) {
+    .header {
+        padding: 1rem;
+    }
+    
+    .header h1 {
+        font-size: 1.2rem;
+        gap: 8px;
+    }
+    
+    .header h1 i {
+        font-size: 1.2rem;
+    }
+    
+    .header p {
+        font-size: 0.8rem;
+        gap: 6px;
+    }
+    
+    .container {
+        margin: 0.5rem auto;
+        padding: 0 0.5rem;
+        height: calc(100vh - 90px);
+    }
+    
+    .tree-panel {
+        border-radius: 12px;
+    }
+    
+    .tree-header {
+        padding: 0.8rem 1rem;
+    }
+    
+    .tree-header h2 {
+        font-size: 1rem;
+    }
+    
+    .tree-header h2 i {
+        font-size: 1rem;
+    }
+    
+    .tree-content {
+        padding: 0.8rem;
+    }
+    
+    .tree ul {
+        padding-left: 1rem;
+    }
+    
+    .tree li {
+        margin: 0.25rem 0;
+    }
+    
+    .tree .node-wrapper {
+        padding: 0.6rem 0.5rem;
+        gap: 8px;
+    }
+    
+    .tree .node-name {
+        font-size: 0.85rem;
+        gap: 8px;
+    }
+    
+    .tree .dir .node-name i,
+    .tree .file .node-name i {
+        font-size: 0.9rem;
+        width: 18px;
+    }
+    
+    .loading-text {
+        font-size: 0.7rem;
+        margin-left: 6px;
+    }
+    
+    .error-message {
+        padding: 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .error-message i {
+        font-size: 1rem;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 1rem;
+    }
+    
+    .header p {
+        font-size: 0.7rem;
+    }
+    
+    .container {
+        height: calc(100vh - 80px);
+        margin: 0.25rem auto;
+    }
+    
+    .tree-header {
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .tree-header h2 {
+        font-size: 0.9rem;
+    }
+    
+    .tree-content {
+        padding: 0.6rem;
+    }
+    
+    .tree ul {
+        padding-left: 0.8rem;
+    }
+    
+    .tree .node-name {
+        font-size: 0.8rem;
+    }
+    
+    .tree .dir .node-name i,
+    .tree .file .node-name i {
+        font-size: 0.85rem;
+        width: 16px;
+    }
+}
+
+/* Для планшетов */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        height: calc(100vh - 130px);
+    }
+    
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .tree .node-name {
+        font-size: 0.9rem;
+    }
+}
+
+/* Для больших экранов */
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1600px;
+    }
+    
+    .tree .node-name {
+        font-size: 1rem;
+    }
+    
+    .tree .dir .node-name i,
+    .tree .file .node-name i {
+        font-size: 1.2rem;
+        width: 24px;
+    }
+}
+
+/* Улучшаем touch-взаимодействие на мобильных */
+@media (hover: none) and (pointer: coarse) {
+    .tree .node-wrapper {
+        padding: 0.7rem 0.6rem;
+    }
+    
+    .tree .node-wrapper:hover {
+        transform: none;
+        background: white;
+    }
+    
+    .tree .node-wrapper:active {
+        background: #f8f9fa;
+        transform: scale(0.98);
+    }
+    
+    .tree .node-name {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
