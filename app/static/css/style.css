@@ -8,21 +8,54 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
     min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    height: 100vh;
 }
 
 .header {
-    background: linear-gradient(135deg, #104989 0%, #0a3570 100%);
+    background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
     color: white;
     padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;
     z-index: 100;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 .header-content {
     max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.header-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.header-logo {
+    height: 60px;
+    width: auto;
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.header-logo:hover {
+    transform: scale(1.05);
+}
+
+.header-text {
+    flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 .header h1 {
@@ -32,10 +65,12 @@ body {
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+    word-break: break-word;
 }
 
 .header h1 i {
     font-size: 1.5rem;
+    flex-shrink: 0;
 }
 
 .header p {
@@ -45,10 +80,12 @@ body {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    word-break: break-word;
 }
 
 .header p i {
     font-size: 1rem;
+    flex-shrink: 0;
 }
 
 .container {
@@ -56,16 +93,21 @@ body {
     margin: 1rem auto;
     padding: 0 1rem;
     height: calc(100vh - 120px);
+    overflow-x: hidden;
+    overflow-y: hidden;
+
 }
 
 .tree-panel {
     background: white;
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     height: 100%;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    border: 1px solid darkgray;
 }
 
 .tree-header {
@@ -73,6 +115,7 @@ body {
     padding: 1rem 1.2rem;
     border-bottom: 2px solid #EE761C;
     flex-shrink: 0;
+    overflow-x: hidden;
 }
 
 .tree-header h2 {
@@ -81,31 +124,43 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    word-break: break-word;
 }
 
 .tree-header h2 i {
     color: #EE761C;
     font-size: 1.2rem;
+    flex-shrink: 0;
 }
 
 .tree-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1rem;
     min-height: 0;
+    width: 100%;
 }
 
 .tree {
     font-size: 0.95rem;
+    width: 100%;
+    overflow-x: hidden;
+    padding-right: 10px;
 }
 
 .tree ul {
     list-style: none;
     padding-left: 1.2rem;
+    overflow-x: hidden;
+    padding-right: 8px;
 }
 
 .tree li {
     margin: 0.3rem 0;
+    overflow-x: hidden;
+    overflow: visible;
+    padding-right: 4px;
 }
 
 .tree .node-wrapper {
@@ -114,16 +169,25 @@ body {
     gap: 10px;
     padding: 0.5rem 0.6rem;
     border-radius: 10px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     background: white;
     cursor: pointer;
-    border: 1px solid transparent;
+    border: 1px solid #e9ecef;
+    position: relative;
+    width: 100%;
+    overflow: visible;
+    will-change: transform;
 }
 
 .tree .node-wrapper:hover {
-    background: #f8f9fa;
-    transform: translateX(4px);
-    border-color: #e9ecef;
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe8d4 100%);
+    transform: translateX(6px);
+    border-color: #EE761C;
+    box-shadow: 0 4px 12px rgba(238, 118, 28, 0.2);
+}
+
+.tree .node-wrapper:active {
+    transform: translateX(6px) scale(0.99);
 }
 
 .tree .node-name {
@@ -135,24 +199,37 @@ body {
     font-size: 0.9rem;
     word-break: break-word;
     line-height: 1.4;
+    overflow-x: hidden;
+    min-width: 0;
 }
 
-/* Иконки для папок */
+
 .tree .dir .node-name i {
     color: #FFC107;
     font-size: 1.1rem;
     width: 20px;
     flex-shrink: 0;
+    transition: all 0.2s ease;
 }
 
-/* Иконки для файлов */
+.tree .node-wrapper:hover .dir .node-name i {
+    transform: scale(1.15);
+    color: #EE761C;
+}
+
+
 .tree .file .node-name i {
     font-size: 1rem;
     width: 20px;
     flex-shrink: 0;
+    transition: all 0.2s ease;
 }
 
-/* Цвета иконок для разных типов файлов */
+.tree .node-wrapper:hover .file .node-name i {
+    transform: scale(1.1);
+}
+
+
 .node-wrapper.video .node-name i {
     color: #dc3545;
 }
@@ -177,20 +254,32 @@ body {
     color: #20c997;
 }
 
-/* Стили для текста */
+
 .tree .dir .node-name span {
     color: #104989;
     font-weight: 600;
     flex: 1;
+    transition: all 0.2s ease;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .tree .file .node-name span {
     color: #2c3e50;
     flex: 1;
+    transition: all 0.2s ease;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
-.tree .node-name:hover span {
+.tree .node-wrapper:hover .node-name span {
+    color: #EE761C;
     text-decoration: underline;
+}
+
+
+.tree .dir .node-name i.fa-folder-open {
+    color: #EE761C;
 }
 
 .loading {
@@ -203,6 +292,7 @@ body {
     font-style: italic;
     margin-left: 8px;
     font-size: 0.8rem;
+    white-space: nowrap;
 }
 
 .loading-text i {
@@ -220,6 +310,7 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 0.9rem;
+    word-break: break-word;
 }
 
 .error-message i {
@@ -227,164 +318,195 @@ body {
     flex-shrink: 0;
 }
 
-/* Стили для открытой папки */
-.tree .dir .node-name i.fa-folder-open {
-    color: #EE761C;
-}
 
-/* Анимация загрузки */
 .fa-spinner {
     animation: fa-spin 1s infinite linear;
 }
 
 @keyframes fa-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
-/* Стили для скроллбара */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+
+.tree-content::-webkit-scrollbar {
+    width: 8px;
 }
 
-::-webkit-scrollbar-track {
+.tree-content::-webkit-scrollbar-track {
     background: #f1f1f1;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #EE761C;
-    border-radius: 3px;
+.tree-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #104989;
+.tree-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
-/* ==================== */
-/* МОБИЛЬНАЯ АДАПТАЦИЯ */
-/* ==================== */
+
+::-webkit-scrollbar:horizontal {
+    display: none;
+}
 
 @media (max-width: 768px) {
     .header {
         padding: 1rem;
     }
-    
+
+    .header-logo-container {
+        gap: 1rem;
+    }
+
+    .header-logo {
+        height: 45px;
+    }
+
     .header h1 {
         font-size: 1.2rem;
         gap: 8px;
     }
-    
+
     .header h1 i {
         font-size: 1.2rem;
     }
-    
+
     .header p {
         font-size: 0.8rem;
         gap: 6px;
     }
-    
+
     .container {
         margin: 0.5rem auto;
         padding: 0 0.5rem;
         height: calc(100vh - 90px);
     }
-    
+
     .tree-panel {
         border-radius: 12px;
     }
-    
+
     .tree-header {
         padding: 0.8rem 1rem;
     }
-    
+
     .tree-header h2 {
         font-size: 1rem;
     }
-    
+
     .tree-header h2 i {
         font-size: 1rem;
     }
-    
+
     .tree-content {
         padding: 0.8rem;
     }
-    
+
+    .tree-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .tree {
+        padding-right: 6px;
+    }
+
     .tree ul {
         padding-left: 1rem;
+        padding-right: 4px;
     }
-    
+
     .tree li {
         margin: 0.25rem 0;
+        padding-right: 2px;
     }
-    
+
     .tree .node-wrapper {
         padding: 0.6rem 0.5rem;
         gap: 8px;
     }
-    
+
+    .tree .node-wrapper:hover {
+        transform: translateX(4px);
+    }
+
     .tree .node-name {
         font-size: 0.85rem;
         gap: 8px;
     }
-    
+
     .tree .dir .node-name i,
     .tree .file .node-name i {
         font-size: 0.9rem;
         width: 18px;
     }
-    
+
     .loading-text {
         font-size: 0.7rem;
         margin-left: 6px;
     }
-    
+
     .error-message {
         padding: 0.8rem;
         font-size: 0.85rem;
     }
-    
+
     .error-message i {
         font-size: 1rem;
     }
 }
 
-/* Для очень маленьких экранов */
+
 @media (max-width: 480px) {
+    .header-logo {
+        height: 35px;
+    }
+
     .header h1 {
         font-size: 1rem;
     }
-    
+
     .header p {
         font-size: 0.7rem;
     }
-    
+
     .container {
         height: calc(100vh - 80px);
         margin: 0.25rem auto;
     }
-    
+
     .tree-header {
         padding: 0.6rem 0.8rem;
     }
-    
+
     .tree-header h2 {
         font-size: 0.9rem;
     }
-    
+
     .tree-content {
         padding: 0.6rem;
     }
-    
+
+    .tree {
+        padding-right: 4px;
+    }
+
     .tree ul {
         padding-left: 0.8rem;
+        padding-right: 2px;
     }
-    
+
     .tree .node-name {
         font-size: 0.8rem;
     }
-    
+
     .tree .dir .node-name i,
     .tree .file .node-name i {
         font-size: 0.85rem;
@@ -392,31 +514,35 @@ body {
     }
 }
 
-/* Для планшетов */
+
 @media (min-width: 769px) and (max-width: 1024px) {
     .container {
         height: calc(100vh - 130px);
     }
-    
+
     .header h1 {
         font-size: 1.8rem;
     }
-    
+
     .tree .node-name {
         font-size: 0.9rem;
     }
 }
 
-/* Для больших экранов */
+
 @media (min-width: 1400px) {
     .container {
         max-width: 1600px;
     }
-    
+
+    .tree {
+        padding-right: 12px;
+    }
+
     .tree .node-name {
         font-size: 1rem;
     }
-    
+
     .tree .dir .node-name i,
     .tree .file .node-name i {
         font-size: 1.2rem;
@@ -424,22 +550,22 @@ body {
     }
 }
 
-/* Улучшаем touch-взаимодействие на мобильных */
+
 @media (hover: none) and (pointer: coarse) {
     .tree .node-wrapper {
         padding: 0.7rem 0.6rem;
     }
-    
+
     .tree .node-wrapper:hover {
         transform: none;
         background: white;
     }
-    
+
     .tree .node-wrapper:active {
         background: #f8f9fa;
         transform: scale(0.98);
     }
-    
+
     .tree .node-name {
         -webkit-tap-highlight-color: transparent;
     }
