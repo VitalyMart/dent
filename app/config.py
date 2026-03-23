@@ -1,12 +1,13 @@
 """Application configuration."""
 
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    files_dir: Path = Path("./files").resolve()
+    files_dir: Path = Path(os.getenv("FILES_DIR", "./files")).resolve()
     app_static_dir: Path = Path("./app/static").resolve()
     templates_dir: Path = Path("./app/templates").resolve()
 
