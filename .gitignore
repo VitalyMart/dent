@@ -5,3 +5,4 @@ __pycache__/
 .DS_Storetest_*.sh
 project_content.txt
 files/
+imgs/
