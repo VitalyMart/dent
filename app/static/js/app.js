@@ -434,4 +434,259 @@ async function initTree() {
     await loadAndDisplayContent('');
 }
 
-document.addEventListener('DOMContentLoaded', initTree);
+let searchTimeout = null;
+
+async function performSearch(query) {
+    if (!query || !query.trim()) {
+        hideSearchResults();
+        return;
+    }
+    
+    const trimmedQuery = query.trim();
+    
+    const resultsContainer = document.getElementById('search-results');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = `
+            <div class="search-loading">
+                <i class="fas fa-spinner fa-pulse"></i>
+                <p>Поиск...</p>
+            </div>
+        `;
+        resultsContainer.classList.add('show');
+    }
+    
+    try {
+        const url = `/api/search?q=${encodeURIComponent(trimmedQuery)}&max_results=50`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`Search failed with status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        displaySearchResults(data.results, trimmedQuery);
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        showSearchError();
+    }
+}
+
+function displaySearchResults(results, query) {
+    const resultsContainer = document.getElementById('search-results');
+    if (!resultsContainer) return;
+    
+    if (results.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="search-empty">
+                <i class="fas fa-folder-open"></i>
+                <p>Ничего не найдено для "${escapeHtml(query)}"</p>
+            </div>
+        `;
+        resultsContainer.classList.add('show');
+        return;
+    }
+    
+    const highlightMatch = (text, searchQuery) => {
+        if (!searchQuery) return escapeHtml(text);
+        const regex = new RegExp(`(${escapeRegex(searchQuery)})`, 'gi');
+        return escapeHtml(text).replace(regex, '<mark>$1</mark>');
+    };
+    
+    const getFileIcon = (result) => {
+        if (result.type === 'directory') {
+            return '<i class="fas fa-folder"></i>';
+        }
+        
+        const ext = result.extension || '';
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
+            return '<i class="fas fa-image"></i>';
+        }
+        if (['.mp4', '.webm', '.mov', '.avi', '.mkv'].includes(ext)) {
+            return '<i class="fas fa-video"></i>';
+        }
+        if (ext === '.pdf') {
+            return '<i class="fas fa-file-pdf"></i>';
+        }
+        if (['.doc', '.docx'].includes(ext)) {
+            return '<i class="fas fa-file-word"></i>';
+        }
+        if (['.ppt', '.pptx'].includes(ext)) {
+            return '<i class="fas fa-file-powerpoint"></i>';
+        }
+        if (['.xls', '.xlsx'].includes(ext)) {
+            return '<i class="fas fa-file-excel"></i>';
+        }
+        if (['.txt', '.md'].includes(ext)) {
+            return '<i class="fas fa-file-alt"></i>';
+        }
+        return '<i class="fas fa-file"></i>';
+    };
+    
+    const html = results.map(result => {
+        const icon = getFileIcon(result);
+        const highlightedName = highlightMatch(result.name, query);
+        const displayPath = result.path || '';
+        
+        return `
+            <div class="search-result-item" data-path="${escapeAttr(result.path)}" data-type="${result.type}" data-name="${escapeAttr(result.name)}">
+                <div class="search-result-icon">${icon}</div>
+                <div class="search-result-info">
+                    <div class="search-result-name">${highlightedName}</div>
+                    <div class="search-result-path">
+                        <i class="fas fa-folder-open"></i>
+                        <span>${escapeHtml(displayPath)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    resultsContainer.innerHTML = html;
+    resultsContainer.classList.add('show');
+    
+    document.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const path = item.dataset.path;
+            const type = item.dataset.type;
+            const name = item.dataset.name;
+            
+            if (type === 'directory') {
+                if (typeof navigateTo === 'function') {
+                    navigateTo(path);
+                }
+                hideSearchResults();
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) searchInput.value = '';
+            } else {
+                const encodedPath = encodeURIComponent(path).replace(/%2F/g, '/');
+                const url = `/media/${encodedPath}`;
+                
+                const ext = (name || '').split('.').pop().toLowerCase();
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
+                    if (typeof showFullImage === 'function') {
+                        showFullImage(url, name);
+                    } else {
+                        window.open(url, '_blank');
+                    }
+                } else {
+                    window.open(url, '_blank');
+                }
+                hideSearchResults();
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) searchInput.value = '';
+            }
+        });
+    });
+}
+
+function hideSearchResults() {
+    const resultsContainer = document.getElementById('search-results');
+    if (resultsContainer) {
+        resultsContainer.classList.remove('show');
+    }
+}
+
+function showSearchError() {
+    const resultsContainer = document.getElementById('search-results');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = `
+            <div class="search-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Ошибка поиска. Попробуйте позже.</p>
+            </div>
+        `;
+        resultsContainer.classList.add('show');
+        setTimeout(() => {
+            if (resultsContainer.classList.contains('show')) {
+                resultsContainer.classList.remove('show');
+            }
+        }, 2000);
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function escapeAttr(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;')
+               .replace(/"/g, '&quot;')
+               .replace(/'/g, '&#39;');
+}
+
+function escapeRegex(string) {
+    if (!string) return '';
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function initSearch() {
+    const searchInput = document.getElementById('search-input');
+    const searchClear = document.getElementById('search-clear');
+    const searchResults = document.getElementById('search-results');
+    
+    if (!searchInput) {
+        return;
+    }
+    
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value;
+        
+        if (searchClear) {
+            searchClear.style.display = query ? 'flex' : 'none';
+        }
+        
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 300);
+    });
+    
+    if (searchClear) {
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            hideSearchResults();
+            searchInput.focus();
+        });
+    }
+    
+    document.addEventListener('click', (e) => {
+        if (searchResults && 
+            !searchResults.contains(e.target) && 
+            e.target !== searchInput &&
+            e.target !== searchClear) {
+            hideSearchResults();
+        }
+    });
+    
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value;
+            if (query && query.trim()) {
+                performSearch(query);
+            }
+        }
+    });
+    
+    if (searchResults) {
+        searchResults.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initTree();
+    initSearch();
+});

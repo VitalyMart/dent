@@ -1,5 +1,3 @@
-"""Media file serving endpoints."""
-
 import urllib.parse
 import os
 from pathlib import Path
@@ -51,9 +49,9 @@ async def serve_media(request: Request, file_path: str):
         if safe_path.startswith('..') or '..' in safe_path.split(os.sep):
             raise HTTPException(status_code=403, detail="Access denied")
         
-        full_path = settings.files_dir / safe_path
-        full_path = full_path.resolve()
         files_dir_resolved = settings.files_dir.resolve()
+        full_path = files_dir_resolved / safe_path
+        full_path = full_path.resolve()
         
         if not str(full_path).startswith(str(files_dir_resolved)):
             raise HTTPException(status_code=403, detail="Access denied")

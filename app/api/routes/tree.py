@@ -20,9 +20,9 @@ async def get_tree(request: Request, path: str = Query("", description="Relative
         if safe_path.startswith('..') or '..' in safe_path.split(os.sep):
             raise HTTPException(status_code=403, detail="Access denied")
         
-        target_path = settings.files_dir / safe_path
-        target_path = target_path.resolve()
         files_dir_resolved = settings.files_dir.resolve()
+        target_path = files_dir_resolved / safe_path
+        target_path = target_path.resolve()
         
         if not str(target_path).startswith(str(files_dir_resolved)):
             raise HTTPException(status_code=403, detail="Access denied")
@@ -38,7 +38,7 @@ async def get_tree(request: Request, path: str = Query("", description="Relative
     items = []
     for item in sorted(target_path.iterdir(), key=lambda x: (x.is_file(), x.name.lower())):
         try:
-            rel_path = str(item.relative_to(files_dir_resolved))
+            rel_path = str(item.resolve().relative_to(files_dir_resolved))
         except ValueError:
             continue
             

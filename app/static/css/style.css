@@ -12,10 +12,10 @@ html, body {
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-image: url('/static/imgs/background.jpg');
-    background-size: cover;
-    background-position: center;
+    background-repeat: repeat;
+    background-position: top left;
+    background-size: auto;
     background-attachment: fixed;
-    background-repeat: no-repeat;
     min-height: 100vh;
 }
 
@@ -430,6 +430,191 @@ body {
     background: #B89A6E;
 }
 
+.search-container {
+    position: relative;
+    max-width: 500px;
+    margin-top: 12px;
+    width: 100%;
+}
+
+.search-box {
+    position: relative;
+    width: 100%;
+}
+
+.search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #B89A6E;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+#search-input {
+    width: 100%;
+    padding: 10px 40px 10px 40px;
+    border: 2px solid #E8DCCC;
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.95);
+    font-size: 14px;
+    color: #5a3e2b;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+#search-input:focus {
+    border-color: #01BB94;
+    box-shadow: 0 0 0 3px rgba(1, 187, 148, 0.1);
+    background: white;
+}
+
+#search-input::placeholder {
+    color: #C4B5A0;
+}
+
+.search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #B89A6E;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    z-index: 1;
+}
+
+.search-clear:hover {
+    background: #E8DCCC;
+    color: #5a3e2b;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin-top: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.search-results.show {
+    display: block;
+}
+
+.search-result-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #F0E8DC;
+    transition: background 0.2s ease;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.search-result-item:hover {
+    background: #FDE3A8;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-icon {
+    flex-shrink: 0;
+    width: 24px;
+    color: #B89A6E;
+    font-size: 18px;
+    text-align: center;
+}
+
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-name {
+    font-size: 14px;
+    color: #5a3e2b;
+    word-break: break-word;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.search-result-name mark {
+    background: #FFE5B4;
+    padding: 0 2px;
+    border-radius: 3px;
+    color: #5a3e2b;
+}
+
+.search-result-path {
+    font-size: 11px;
+    color: #B89A6E;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.search-result-path i {
+    font-size: 10px;
+}
+
+.search-loading {
+    padding: 20px;
+    text-align: center;
+    color: #B89A6E;
+}
+
+.search-empty {
+    padding: 30px 20px;
+    text-align: center;
+    color: #B89A6E;
+}
+
+.search-empty i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+    display: block;
+}
+
+.search-empty p {
+    font-size: 14px;
+    margin: 0;
+}
+
+.search-error {
+    padding: 20px;
+    text-align: center;
+    color: #c97e5a;
+}
+
+.search-error i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: block;
+}
+
 @media (max-width: 768px) {
     .header {
         padding: 0.6rem 1rem;
@@ -533,6 +718,37 @@ body {
     .empty-folder {
         padding: 40px;
     }
+    
+    .search-container {
+        max-width: 100%;
+        margin-top: 10px;
+    }
+    
+    .search-results {
+        max-height: 300px;
+        position: fixed;
+        top: auto;
+        left: 10px;
+        right: 10px;
+        margin-top: 8px;
+    }
+    
+    .search-result-item {
+        padding: 10px 12px;
+    }
+    
+    .search-result-name {
+        font-size: 13px;
+    }
+    
+    .search-result-path {
+        font-size: 10px;
+    }
+    
+    .search-result-icon {
+        width: 20px;
+        font-size: 16px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -606,6 +822,18 @@ body {
     
     .gallery-image img {
         height: 85px;
+    }
+    
+    .search-results {
+        max-height: 250px;
+    }
+    
+    .search-result-item {
+        padding: 8px 10px;
+    }
+    
+    .search-result-name {
+        font-size: 12px;
     }
 }
 
