@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from pathlib import Path
 import os
+import subprocess
 
 from app.api.routes import tree, media, search
 from app.config import settings
@@ -58,6 +59,17 @@ async def startup_event():
         print(f"Created files directory: {files_dir}")
     else:
         print(f"Files directory exists: {files_dir}")
+    
+    print(f"FILES_DIR from env: {os.getenv('FILES_DIR')}")
+    print(f"files_dir in settings: {files_dir}")
+    
+    if files_dir.exists():
+        print(f"Contents of {files_dir}:")
+        try:
+            for item in files_dir.iterdir():
+                print(f"  - {item.name}")
+        except Exception as e:
+            print(f"  Error reading: {e}")
 
 
 @app.get("/")
@@ -101,3 +113,28 @@ async def debug_info():
         "cwd": os.getcwd(),
         "cwd_contents": cwd_contents
     }
+
+
+@app.get("/debug-fs")
+async def debug_fs():
+    try:
+        result = subprocess.run(['ls', '-la', '/app/files'], capture_output=True, text=True, timeout=5)
+        return {
+            "ls_output": result.stdout,
+            "ls_error": result.stderr
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/debug-find")
+async def debug_find():
+    try:
+        result = subprocess.run(['find', '/app', '-name', '3 курс', '-type', 'd', '2>/dev/null'], 
+                                capture_output=True, text=True, timeout=10, shell=True)
+        return {
+            "find_result": result.stdout,
+            "error": result.stderr
+        }
+    except Exception as e:
+        return {"error": str(e)}
