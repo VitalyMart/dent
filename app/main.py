@@ -7,6 +7,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from pathlib import Path
+import os
 
 from app.api.routes import tree, media, search
 from app.config import settings
@@ -61,3 +63,41 @@ async def startup_event():
 @app.get("/")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/debug")
+async def debug_info():
+    files_dir = settings.files_dir
+    parent_dir = files_dir.parent
+    
+    files_dir_contents = []
+    if files_dir.exists() and files_dir.is_dir():
+        try:
+            files_dir_contents = [p.name for p in files_dir.iterdir()]
+        except Exception as e:
+            files_dir_contents = [f"Error: {e}"]
+    
+    parent_dir_contents = []
+    if parent_dir.exists():
+        try:
+            parent_dir_contents = [p.name for p in parent_dir.iterdir()]
+        except Exception as e:
+            parent_dir_contents = [f"Error: {e}"]
+    
+    cwd_contents = []
+    try:
+        cwd_contents = [p.name for p in Path(os.getcwd()).iterdir()][:30]
+    except Exception as e:
+        cwd_contents = [f"Error: {e}"]
+    
+    return {
+        "files_dir": str(files_dir),
+        "files_dir_exists": files_dir.exists(),
+        "files_dir_is_dir": files_dir.is_dir() if files_dir.exists() else False,
+        "files_dir_contents": files_dir_contents,
+        "parent_dir": str(parent_dir),
+        "parent_dir_contents": parent_dir_contents,
+        "env_FILES_DIR": os.getenv("FILES_DIR"),
+        "cwd": os.getcwd(),
+        "cwd_contents": cwd_contents
+    }
