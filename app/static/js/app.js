@@ -1,26 +1,4 @@
-(function () {
-    const modalStyles = document.createElement('style');
-    modalStyles.textContent = `
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-        @keyframes scaleOut {
-            from { transform: scale(1); opacity: 1; }
-            to { transform: scale(0.95); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(modalStyles);
-})();
-
+// ========== УТИЛИТЫ ==========
 function getFileExtension(filename) {
     return filename.split('.').pop().toLowerCase();
 }
@@ -56,29 +34,28 @@ function getFileIcon(ext, isFolder = false) {
     return icons[ext] || '<i class="fas fa-file" style="color: #B89A6E;"></i>';
 }
 
-function createGalleryImage(imageUrl, fileName) {
-    const container = document.createElement('div');
-    container.className = 'gallery-image';
-    
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.alt = fileName;
-    
-    const caption = document.createElement('span');
-    caption.textContent = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
-    caption.title = fileName;
-    
-    container.appendChild(img);
-    container.appendChild(caption);
-    
-    container.onclick = (e) => {
-        e.stopPropagation();
-        showFullImage(imageUrl, fileName);
-    };
-    
-    return container;
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
+function escapeAttr(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;')
+               .replace(/"/g, '&quot;')
+               .replace(/'/g, '&#39;');
+}
+
+function escapeRegex(string) {
+    if (!string) return '';
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ========== МОДАЛЬНОЕ ОКНО ==========
 let currentModal = null;
 
 function showFullImage(imageUrl, fileName) {
@@ -136,23 +113,7 @@ function closeModal(modal, modalContent) {
     }, 200);
 }
 
-let currentPath = '';
-let history = [];
-
-async function loadTree(path = "") {
-    const url = `/api/tree?path=${encodeURIComponent(path)}`;
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Ошибка ${response.status}`);
-        }
-        return await response.json();
-    } catch (err) {
-        console.error(err);
-        return [];
-    }
-}
-
+// ========== СОЗДАНИЕ КАРТОЧЕК ==========
 function createFileCard(node) {
     const card = document.createElement('div');
     card.className = 'file-card';
@@ -173,8 +134,7 @@ function createFileCard(node) {
     const encodedPath = encodeURIComponent(node.path).replace(/%2F/g, '/');
     const url = `/media/${encodedPath}`;
     
-    card.addEventListener('click', (e) => {
-        e.stopPropagation();
+    card.addEventListener('click', () => {
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
             showFullImage(url, node.name);
         } else {
@@ -201,15 +161,14 @@ function createFolderCard(node, onClick) {
     card.appendChild(icon);
     card.appendChild(nameSpan);
     
-    card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        onClick(node.path, node.name);
+    card.addEventListener('click', () => {
+        onClick(node.path);
     });
     
     return card;
 }
 
-function createImagesFolderCard(node, onClick) {
+function createImagesFolderCard(onClick) {
     const card = document.createElement('div');
     card.className = 'folder-card images-folder-card';
     
@@ -219,29 +178,62 @@ function createImagesFolderCard(node, onClick) {
     
     const nameSpan = document.createElement('div');
     nameSpan.className = 'folder-card-name';
-    nameSpan.textContent = node.name.length > 28 ? node.name.substring(0, 25) + '...' : node.name;
-    nameSpan.title = node.name;
+    nameSpan.textContent = 'Изображения';
     
     card.appendChild(icon);
     card.appendChild(nameSpan);
     
-    card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        onClick(node.path, node.name);
+    card.addEventListener('click', () => {
+        onClick();
     });
     
     return card;
 }
 
-function goToParent() {
-    if (currentPath === '') {
-        return;
-    }
+function createGalleryImage(imageUrl, fileName) {
+    const container = document.createElement('div');
+    container.className = 'gallery-image';
     
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = fileName;
+    img.loading = 'lazy';
+    
+    const caption = document.createElement('span');
+    caption.textContent = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
+    caption.title = fileName;
+    
+    container.appendChild(img);
+    container.appendChild(caption);
+    
+    container.onclick = () => {
+        showFullImage(imageUrl, fileName);
+    };
+    
+    return container;
+}
+
+// ========== ОСНОВНАЯ ЛОГИКА ==========
+let currentPath = '';
+
+async function loadTree(path = "") {
+    const url = `/api/tree?path=${encodeURIComponent(path)}`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Ошибка ${response.status}`);
+        }
+        return await response.json();
+    } catch (err) {
+        return [];
+    }
+}
+
+function goToParent() {
+    if (currentPath === '') return;
     const parts = currentPath.split('/');
     parts.pop();
-    const parentPath = parts.join('/');
-    navigateTo(parentPath);
+    navigateTo(parts.join('/'));
 }
 
 function goToRoot() {
@@ -263,7 +255,7 @@ async function loadAndDisplayContent(path) {
     try {
         const items = await loadTree(path);
         
-        if (items.length === 0) {
+        if (!items || items.length === 0) {
             container.innerHTML = `
                 <div class="empty-folder">
                     <i class="fas fa-folder-open"></i>
@@ -300,19 +292,14 @@ async function loadAndDisplayContent(path) {
         }
         
         for (const folder of folders) {
-            cardsGrid.appendChild(createFolderCard(folder, (folderPath, folderName) => {
+            cardsGrid.appendChild(createFolderCard(folder, (folderPath) => {
                 navigateTo(folderPath);
             }));
         }
         
         if (images.length > 0) {
-            const imagesFolder = {
-                path: path ? path + '/_images' : '_images',
-                name: 'Изображения',
-                type: 'directory'
-            };
-            cardsGrid.appendChild(createImagesFolderCard(imagesFolder, async (folderPath, folderName) => {
-                await showImagesContent(images, folderName);
+            cardsGrid.appendChild(createImagesFolderCard(() => {
+                showImagesContent(images);
             }));
         }
         
@@ -328,16 +315,14 @@ async function loadAndDisplayContent(path) {
         }
         
     } catch (err) {
-        console.error(err);
         container.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки</div>';
     }
 }
 
-async function showImagesContent(images, folderName) {
+function showImagesContent(images) {
     const container = document.getElementById('content-container');
     if (!container) return;
     
-    history.push(currentPath);
     currentPath = currentPath ? currentPath + '/_images' : '_images';
     updatePathDisplay();
     
@@ -360,8 +345,7 @@ async function showImagesContent(images, folderName) {
         for (const img of images) {
             const encodedPath = encodeURIComponent(img.path).replace(/%2F/g, '/');
             const url = `/media/${encodedPath}`;
-            const galleryImg = createGalleryImage(url, img.name);
-            imagesContainer.appendChild(galleryImg);
+            imagesContainer.appendChild(createGalleryImage(url, img.name));
         }
         
         container.innerHTML = '';
@@ -371,69 +355,17 @@ async function showImagesContent(images, folderName) {
 
 function updatePathDisplay() {
     const pathDisplay = document.getElementById('current-path');
-    if (pathDisplay) {
-        if (currentPath === '') {
-            pathDisplay.innerHTML = '<i class="fas fa-folder"></i> <span>Корневая папка</span>';
-        } else {
-            const parts = currentPath.split('/');
-            let displayPath = '';
-            
-            if (parts.length > 2) {
-                displayPath = '... / ' + parts.slice(-2).join(' / ');
-            } else {
-                displayPath = currentPath.replace(/\//g, ' / ');
-            }
-            
-            pathDisplay.innerHTML = `<i class="fas fa-folder-open"></i> <span>${displayPath}</span>`;
-        }
+    if (!pathDisplay) return;
+    
+    if (currentPath === '') {
+        pathDisplay.innerHTML = '<i class="fas fa-folder"></i> <span>Корневая папка</span>';
+    } else {
+        const displayPath = currentPath.replace(/\//g, ' / ');
+        pathDisplay.innerHTML = `<i class="fas fa-folder-open"></i> <span>${escapeHtml(displayPath)}</span>`;
     }
 }
 
-async function initTree() {
-    const mainContainer = document.getElementById('tree');
-    if (!mainContainer) return;
-    
-    mainContainer.innerHTML = `
-        <div class="navigation-bar">
-            <button class="back-btn" id="back-btn"><i class="fas fa-arrow-left"></i> Назад</button>
-            <button class="root-path-btn" id="root-path-btn"><i class="fas fa-folder"></i> Корневая папка</button>
-            <div class="current-path" id="current-path"></div>
-        </div>
-        <div class="content-container" id="content-container">
-            <div class="loading-spinner"><i class="fas fa-spinner fa-pulse fa-2x"></i><p>Загрузка...</p></div>
-        </div>
-    `;
-    
-    const backBtn = document.getElementById('back-btn');
-    if (backBtn) {
-        backBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            goToParent();
-        });
-        backBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            goToParent();
-        });
-    }
-    
-    const rootPathBtn = document.getElementById('root-path-btn');
-    if (rootPathBtn) {
-        rootPathBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            goToRoot();
-        });
-        rootPathBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            goToRoot();
-        });
-    }
-    
-    currentPath = '';
-    updatePathDisplay();
-    
-    await loadAndDisplayContent('');
-}
-
+// ========== ПОИСК ==========
 let searchTimeout = null;
 
 async function performSearch(query) {
@@ -443,8 +375,8 @@ async function performSearch(query) {
     }
     
     const trimmedQuery = query.trim();
-    
     const resultsContainer = document.getElementById('search-results');
+    
     if (resultsContainer) {
         resultsContainer.innerHTML = `
             <div class="search-loading">
@@ -460,14 +392,13 @@ async function performSearch(query) {
         const response = await fetch(url);
         
         if (!response.ok) {
-            throw new Error(`Search failed with status: ${response.status}`);
+            throw new Error();
         }
         
         const data = await response.json();
         displaySearchResults(data.results, trimmedQuery);
         
     } catch (error) {
-        console.error('Search error:', error);
         showSearchError();
     }
 }
@@ -475,6 +406,24 @@ async function performSearch(query) {
 function displaySearchResults(results, query) {
     const resultsContainer = document.getElementById('search-results');
     if (!resultsContainer) return;
+    
+    const highlightMatch = (text, searchQuery) => {
+        if (!searchQuery) return escapeHtml(text);
+        const regex = new RegExp(`(${escapeRegex(searchQuery)})`, 'gi');
+        return escapeHtml(text).replace(regex, '<mark>$1</mark>');
+    };
+    
+    const getResultIcon = (result) => {
+        if (result.type === 'directory') return '<i class="fas fa-folder"></i>';
+        const ext = result.extension || '';
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
+            return '<i class="fas fa-image"></i>';
+        }
+        if (['.mp4', '.webm', '.mov', '.avi', '.mkv'].includes(ext)) {
+            return '<i class="fas fa-video"></i>';
+        }
+        return '<i class="fas fa-file"></i>';
+    };
     
     if (results.length === 0) {
         resultsContainer.innerHTML = `
@@ -487,46 +436,9 @@ function displaySearchResults(results, query) {
         return;
     }
     
-    const highlightMatch = (text, searchQuery) => {
-        if (!searchQuery) return escapeHtml(text);
-        const regex = new RegExp(`(${escapeRegex(searchQuery)})`, 'gi');
-        return escapeHtml(text).replace(regex, '<mark>$1</mark>');
-    };
-    
-    const getFileIcon = (result) => {
-        if (result.type === 'directory') {
-            return '<i class="fas fa-folder"></i>';
-        }
-        
-        const ext = result.extension || '';
-        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
-            return '<i class="fas fa-image"></i>';
-        }
-        if (['.mp4', '.webm', '.mov', '.avi', '.mkv'].includes(ext)) {
-            return '<i class="fas fa-video"></i>';
-        }
-        if (ext === '.pdf') {
-            return '<i class="fas fa-file-pdf"></i>';
-        }
-        if (['.doc', '.docx'].includes(ext)) {
-            return '<i class="fas fa-file-word"></i>';
-        }
-        if (['.ppt', '.pptx'].includes(ext)) {
-            return '<i class="fas fa-file-powerpoint"></i>';
-        }
-        if (['.xls', '.xlsx'].includes(ext)) {
-            return '<i class="fas fa-file-excel"></i>';
-        }
-        if (['.txt', '.md'].includes(ext)) {
-            return '<i class="fas fa-file-alt"></i>';
-        }
-        return '<i class="fas fa-file"></i>';
-    };
-    
     const html = results.map(result => {
-        const icon = getFileIcon(result);
+        const icon = getResultIcon(result);
         const highlightedName = highlightMatch(result.name, query);
-        const displayPath = result.path || '';
         
         return `
             <div class="search-result-item" data-path="${escapeAttr(result.path)}" data-type="${result.type}" data-name="${escapeAttr(result.name)}">
@@ -535,7 +447,7 @@ function displaySearchResults(results, query) {
                     <div class="search-result-name">${highlightedName}</div>
                     <div class="search-result-path">
                         <i class="fas fa-folder-open"></i>
-                        <span>${escapeHtml(displayPath)}</span>
+                        <span>${escapeHtml(result.path || '')}</span>
                     </div>
                 </div>
             </div>
@@ -546,30 +458,22 @@ function displaySearchResults(results, query) {
     resultsContainer.classList.add('show');
     
     document.querySelectorAll('.search-result-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.stopPropagation();
+        item.addEventListener('click', () => {
             const path = item.dataset.path;
             const type = item.dataset.type;
             const name = item.dataset.name;
             
             if (type === 'directory') {
-                if (typeof navigateTo === 'function') {
-                    navigateTo(path);
-                }
+                navigateTo(path);
                 hideSearchResults();
                 const searchInput = document.getElementById('search-input');
                 if (searchInput) searchInput.value = '';
             } else {
                 const encodedPath = encodeURIComponent(path).replace(/%2F/g, '/');
                 const url = `/media/${encodedPath}`;
-                
                 const ext = (name || '').split('.').pop().toLowerCase();
                 if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
-                    if (typeof showFullImage === 'function') {
-                        showFullImage(url, name);
-                    } else {
-                        window.open(url, '_blank');
-                    }
+                    showFullImage(url, name);
                 } else {
                     window.open(url, '_blank');
                 }
@@ -594,37 +498,12 @@ function showSearchError() {
         resultsContainer.innerHTML = `
             <div class="search-error">
                 <i class="fas fa-exclamation-triangle"></i>
-                <p>Ошибка поиска. Попробуйте позже.</p>
+                <p>Ошибка поиска</p>
             </div>
         `;
         resultsContainer.classList.add('show');
-        setTimeout(() => {
-            if (resultsContainer.classList.contains('show')) {
-                resultsContainer.classList.remove('show');
-            }
-        }, 2000);
+        setTimeout(() => hideSearchResults(), 2000);
     }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function escapeAttr(text) {
-    if (!text) return '';
-    return text.replace(/&/g, '&amp;')
-               .replace(/</g, '&lt;')
-               .replace(/>/g, '&gt;')
-               .replace(/"/g, '&quot;')
-               .replace(/'/g, '&#39;');
-}
-
-function escapeRegex(string) {
-    if (!string) return '';
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function initSearch() {
@@ -632,24 +511,13 @@ function initSearch() {
     const searchClear = document.getElementById('search-clear');
     const searchResults = document.getElementById('search-results');
     
-    if (!searchInput) {
-        return;
-    }
+    if (!searchInput) return;
     
     searchInput.addEventListener('input', (e) => {
         const query = e.target.value;
-        
-        if (searchClear) {
-            searchClear.style.display = query ? 'flex' : 'none';
-        }
-        
-        if (searchTimeout) {
-            clearTimeout(searchTimeout);
-        }
-        
-        searchTimeout = setTimeout(() => {
-            performSearch(query);
-        }, 300);
+        if (searchClear) searchClear.style.display = query ? 'flex' : 'none';
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => performSearch(query), 300);
     });
     
     if (searchClear) {
@@ -669,24 +537,35 @@ function initSearch() {
             hideSearchResults();
         }
     });
-    
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            const query = searchInput.value;
-            if (query && query.trim()) {
-                performSearch(query);
-            }
-        }
-    });
-    
-    if (searchResults) {
-        searchResults.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initTree();
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+function init() {
+    const backBtn = document.getElementById('back-btn');
+    const rootPathBtn = document.getElementById('root-path-btn');
+    
+    if (backBtn) {
+        backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            goToParent();
+        });
+    }
+    
+    if (rootPathBtn) {
+        rootPathBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            goToRoot();
+        });
+    }
+    
+    currentPath = '';
+    updatePathDisplay();
+    loadAndDisplayContent('');
     initSearch();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
