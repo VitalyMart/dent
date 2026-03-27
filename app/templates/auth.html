@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#01BB94">
+    <title>Вход | Стоматологические материалы</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='75' font-size='70' text-anchor='middle' fill='%2301BB94'%3E🦷%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>
+                    <i class="fas fa-tooth"></i>
+                    <span>Dental Portal</span>
+                </h1>
+                <p>Учебные материалы по стоматологии</p>
+            </div>
+            
+            <div id="login-form" class="auth-form">
+                <form id="login-form-element">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Имя пользователя</label>
+                        <input type="text" id="login-username" required placeholder="Введите username">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Пароль</label>
+                        <input type="password" id="login-password" required placeholder="Введите пароль">
+                    </div>
+                    <button type="submit" class="auth-btn">
+                        <i class="fas fa-arrow-right"></i> Войти
+                    </button>
+                </form>
+            </div>
+            
+            <div class="info-message">
+                <i class="fas fa-info-circle"></i>
+                <span>Демо: admin / admin123 | user / user123</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container"></div>
+    
+    <script src="/static/js/auth.js"></script>
+</body>
+</html>

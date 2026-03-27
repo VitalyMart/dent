@@ -1,4 +1,4 @@
-// ========== УТИЛИТЫ ==========
+// Функции для работы с файлами и интерфейсом
 function getFileExtension(filename) {
     return filename.split('.').pop().toLowerCase();
 }
@@ -55,7 +55,6 @@ function escapeRegex(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// ========== МОДАЛЬНОЕ ОКНО ==========
 let currentModal = null;
 
 function showFullImage(imageUrl, fileName) {
@@ -113,7 +112,6 @@ function closeModal(modal, modalContent) {
     }, 200);
 }
 
-// ========== СОЗДАНИЕ КАРТОЧЕК ==========
 function createFileCard(node) {
     const card = document.createElement('div');
     card.className = 'file-card';
@@ -213,18 +211,33 @@ function createGalleryImage(imageUrl, fileName) {
     return container;
 }
 
-// ========== ОСНОВНАЯ ЛОГИКА ==========
 let currentPath = '';
 
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json'
+    };
+}
+
 async function loadTree(path = "") {
+    const headers = getAuthHeaders();
     const url = `/api/tree?path=${encodeURIComponent(path)}`;
+    
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            headers,
+            credentials: 'same-origin'
+        });
+        
         if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/auth.html';
+            }
             throw new Error(`Ошибка ${response.status}`);
         }
         return await response.json();
     } catch (err) {
+        console.error('Load tree error:', err);
         return [];
     }
 }
@@ -315,6 +328,7 @@ async function loadAndDisplayContent(path) {
         }
         
     } catch (err) {
+        console.error('Load content error:', err);
         container.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки</div>';
     }
 }
@@ -365,7 +379,6 @@ function updatePathDisplay() {
     }
 }
 
-// ========== ПОИСК ==========
 let searchTimeout = null;
 
 async function performSearch(query) {
@@ -376,6 +389,7 @@ async function performSearch(query) {
     
     const trimmedQuery = query.trim();
     const resultsContainer = document.getElementById('search-results');
+    const headers = getAuthHeaders();
     
     if (resultsContainer) {
         resultsContainer.innerHTML = `
@@ -389,9 +403,15 @@ async function performSearch(query) {
     
     try {
         const url = `/api/search?q=${encodeURIComponent(trimmedQuery)}&max_results=50`;
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            headers,
+            credentials: 'same-origin'
+        });
         
         if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/auth.html';
+            }
             throw new Error();
         }
         
@@ -399,6 +419,7 @@ async function performSearch(query) {
         displaySearchResults(data.results, trimmedQuery);
         
     } catch (error) {
+        console.error('Search error:', error);
         showSearchError();
     }
 }
@@ -539,10 +560,20 @@ function initSearch() {
     });
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+// Функция выхода
+function logout() {
+    fetch('/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin'
+    }).finally(() => {
+        window.location.href = '/auth.html';
+    });
+}
+
 function init() {
     const backBtn = document.getElementById('back-btn');
     const rootPathBtn = document.getElementById('root-path-btn');
+    const logoutBtn = document.getElementById('logout-btn');
     
     if (backBtn) {
         backBtn.addEventListener('click', (e) => {
@@ -556,6 +587,10 @@ function init() {
             e.preventDefault();
             goToRoot();
         });
+    }
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
     }
     
     currentPath = '';

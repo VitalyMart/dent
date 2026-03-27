@@ -34,6 +34,7 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    padding-right: 100px;
 }
 
 .header-logo-container {
@@ -61,9 +62,11 @@ body {
 }
 
 .header-text h1 {
-    font-size: 1.3rem;
+    font-size: clamp(0.9rem, 4vw, 1.3rem);
     margin: 0;
     line-height: 1.4;
+    white-space: normal;
+    word-break: keep-all;
 }
 
 .header-text h1 i,
@@ -74,15 +77,16 @@ body {
 }
 
 .header-text h1 i {
-    font-size: 1.3rem;
+    font-size: clamp(0.9rem, 4vw, 1.3rem);
     margin-right: 0.5rem;
 }
 
 .header p {
     opacity: 0.9;
-    font-size: 0.8rem;
+    font-size: clamp(0.65rem, 3vw, 0.8rem);
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 6px;
     margin-top: 4px;
     line-height: 1.3;
@@ -90,8 +94,10 @@ body {
 
 .container {
     max-width: 1400px;
-    margin: 1.2rem auto;
+    margin: 0 auto;
     padding: 0 1.2rem;
+    position: relative;
+    z-index: 1;
 }
 
 .tree-panel {
@@ -101,7 +107,7 @@ body {
 
 .tree-header {
     background: transparent;
-    padding: 0 0 0.8rem 0;
+    padding: 1rem 0 0.8rem 0;
     border-bottom: 2px solid #D4C4A8;
     margin-bottom: 1rem;
 }
@@ -615,9 +621,56 @@ body {
     display: block;
 }
 
+/* Фиксированная кнопка выхода */
+.logout-fixed {
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    z-index: 10001;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 40px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-family: inherit;
+}
+
+.logout-fixed:hover {
+    background: rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.logout-fixed:active {
+    transform: translateY(0);
+}
+
+.logout-fixed i {
+    font-size: 14px;
+}
+
+/* Скрываем старую кнопку в навигации */
+.navigation-bar .logout-btn {
+    display: none;
+}
+
 @media (max-width: 768px) {
     .header {
         padding: 0.6rem 1rem;
+    }
+    
+    .header-content {
+        padding-right: 70px;
     }
     
     .header-logo-container {
@@ -629,26 +682,23 @@ body {
     }
     
     .header-text h1 {
-        font-size: 1rem;
+        font-size: clamp(0.8rem, 3.5vw, 1rem);
     }
     
     .header-text h1 i {
-        font-size: 1rem;
-        margin-right: 0.4rem;
+        font-size: clamp(0.8rem, 3.5vw, 1rem);
     }
     
     .header p {
-        font-size: 0.7rem;
-        margin-top: 2px;
+        font-size: clamp(0.6rem, 2.5vw, 0.7rem);
     }
     
     .container {
-        margin: 0.8rem auto;
         padding: 0 0.8rem;
     }
     
     .tree-header {
-        padding: 0 0 0.6rem 0;
+        padding: 0.8rem 0 0.6rem 0;
         margin-bottom: 0.8rem;
     }
     
@@ -658,18 +708,18 @@ body {
     
     .navigation-bar {
         justify-content: center;
-        gap: 10px;
+        gap: 8px;
     }
     
     .back-btn, .root-path-btn {
-        padding: 6px 16px;
+        padding: 6px 14px;
         font-size: 12px;
         height: 34px;
     }
     
     .current-path {
         margin-left: 0;
-        max-width: 200px;
+        max-width: 180px;
         font-size: 10px;
         padding: 4px 10px;
         order: 3;
@@ -677,26 +727,63 @@ body {
         height: 34px;
     }
     
+    .logout-fixed {
+        top: 10px;
+        right: 12px;
+        padding: 6px 14px;
+        font-size: 12px;
+    }
+    
+    .logout-fixed i {
+        font-size: 12px;
+    }
+    
+    .search-container {
+        max-width: 100%;
+        margin-top: 10px;
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    #search-input {
+        padding: 8px 35px 8px 35px;
+        font-size: 13px;
+    }
+    
+    .search-icon {
+        font-size: 12px;
+        left: 12px;
+    }
+    
+    .search-clear {
+        right: 8px;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+    }
+    
     .cards-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 16px;
+        gap: 14px;
     }
     
     .images-container-full {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 16px;
+        gap: 14px;
     }
     
     .file-card, .folder-card {
-        padding: 16px 10px;
+        padding: 14px 8px;
     }
     
     .file-card-icon, .folder-card-icon {
-        font-size: 40px;
+        font-size: 36px;
     }
     
     .file-card-icon i, .folder-card-icon i {
-        font-size: 40px;
+        font-size: 36px;
     }
     
     .file-card-name, .folder-card-name {
@@ -704,7 +791,7 @@ body {
     }
     
     .gallery-image img {
-        height: 100px;
+        height: 90px;
     }
     
     .gallery-image span {
@@ -717,11 +804,6 @@ body {
     
     .empty-folder {
         padding: 40px;
-    }
-    
-    .search-container {
-        max-width: 100%;
-        margin-top: 10px;
     }
     
     .search-results {
@@ -756,42 +838,78 @@ body {
         padding: 0.5rem 0.8rem;
     }
     
+    .header-content {
+        padding-right: 55px;
+    }
+    
     .header-logo-container {
-        gap: 0.6rem;
+        gap: 0.5rem;
     }
     
     .header-logo {
-        height: 35px;
+        height: 32px;
     }
     
     .header-text h1 {
-        font-size: 0.85rem;
+        font-size: clamp(0.7rem, 3vw, 0.85rem);
     }
     
     .header-text h1 i {
-        font-size: 0.85rem;
+        font-size: clamp(0.7rem, 3vw, 0.85rem);
         margin-right: 0.3rem;
     }
     
     .header p {
-        font-size: 0.6rem;
+        font-size: clamp(0.55rem, 2.2vw, 0.6rem);
+    }
+    
+    .tree-header {
+        padding: 0.6rem 0 0.5rem 0;
     }
     
     .navigation-bar {
-        gap: 8px;
+        gap: 6px;
     }
     
     .back-btn, .root-path-btn {
-        padding: 5px 12px;
-        font-size: 11px;
-        height: 30px;
+        padding: 4px 10px;
+        font-size: 10px;
+        height: 28px;
     }
     
     .current-path {
-        max-width: 150px;
-        font-size: 9px;
-        padding: 3px 8px;
-        height: 30px;
+        max-width: 130px;
+        font-size: 8px;
+        padding: 2px 6px;
+        height: 28px;
+    }
+    
+    .logout-fixed {
+        top: 8px;
+        right: 8px;
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    
+    .logout-fixed i {
+        font-size: 11px;
+    }
+    
+    #search-input {
+        padding: 6px 30px 6px 30px;
+        font-size: 12px;
+    }
+    
+    .search-icon {
+        font-size: 11px;
+        left: 10px;
+    }
+    
+    .search-clear {
+        right: 6px;
+        width: 18px;
+        height: 18px;
+        font-size: 11px;
     }
     
     .cards-grid {
@@ -805,7 +923,7 @@ body {
     }
     
     .file-card, .folder-card {
-        padding: 12px 8px;
+        padding: 12px 6px;
     }
     
     .file-card-icon, .folder-card-icon {
@@ -821,7 +939,7 @@ body {
     }
     
     .gallery-image img {
-        height: 85px;
+        height: 80px;
     }
     
     .search-results {
@@ -838,17 +956,57 @@ body {
 }
 
 @media (max-width: 380px) {
+    .header-content {
+        padding-right: 50px;
+    }
+    
+    .header-logo {
+        height: 28px;
+    }
+    
     .header-text h1 {
-        font-size: 0.75rem;
+        font-size: clamp(0.65rem, 2.5vw, 0.75rem);
     }
     
     .header-text h1 i {
-        font-size: 0.75rem;
+        font-size: clamp(0.65rem, 2.5vw, 0.75rem);
         margin-right: 0.2rem;
     }
     
     .header p {
-        font-size: 0.55rem;
+        font-size: clamp(0.5rem, 2vw, 0.55rem);
+    }
+    
+    .back-btn, .root-path-btn {
+        padding: 4px 8px;
+        font-size: 9px;
+        height: 26px;
+    }
+    
+    .current-path {
+        max-width: 110px;
+        font-size: 7px;
+        padding: 2px 5px;
+        height: 26px;
+    }
+    
+    .logout-fixed {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+    
+    .logout-fixed i {
+        font-size: 10px;
+    }
+    
+    #search-input {
+        padding: 5px 28px 5px 28px;
+        font-size: 11px;
+    }
+    
+    .search-icon {
+        font-size: 10px;
+        left: 9px;
     }
     
     .cards-grid {
@@ -857,7 +1015,7 @@ body {
     }
     
     .file-card, .folder-card {
-        padding: 10px 6px;
+        padding: 10px 4px;
     }
     
     .file-card-icon, .folder-card-icon {
@@ -866,5 +1024,9 @@ body {
     
     .file-card-icon i, .folder-card-icon i {
         font-size: 28px;
+    }
+    
+    .gallery-image img {
+        height: 70px;
     }
 }
