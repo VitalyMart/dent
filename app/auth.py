@@ -2,14 +2,14 @@ from datetime import datetime, timedelta
 from typing import Optional
 import bcrypt
 import jwt
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.config import settings
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
@@ -43,11 +43,27 @@ def decode_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+def get_token_from_request(request: Request) -> str:
+    """Извлекает токен из cookie или Authorization header"""
+    token = request.cookies.get("token")
+    if token:
+        return token
+    
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+async def get_current_user(
+    request: Request,
     db: Session = Depends(get_db)
 ) -> User:
-    token = credentials.credentials
+    token = get_token_from_request(request)
     payload = decode_token(token)
     user_id: int = payload.get("sub")
     if user_id is None:

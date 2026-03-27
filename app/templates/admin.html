@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#01BB94">
+    <title>Админ панель | Стоматологические материалы</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='75' font-size='70' text-anchor='middle' fill='%2301BB94'%3E🦷%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-crown"></i> Админ панель</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> На главную</a>
+                <button id="logout-btn" class="nav-link logout-link"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+            </nav>
+        </div>
+        
+        <div class="admin-content">
+            <div class="admin-header">
+                <h1><i class="fas fa-users"></i> Управление пользователями</h1>
+                <div class="header-buttons">
+                    <button id="create-user-btn" class="btn-primary"><i class="fas fa-plus"></i> Создать пользователя</button>
+                    <button id="mass-create-btn" class="btn-secondary"><i class="fas fa-users"></i> Массовое создание</button>
+                </div>
+            </div>
+            
+            <div class="users-table-container">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя пользователя</th>
+                            <th>Email</th>
+                            <th>Роль</th>
+                            <th>Дата регистрации</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr><td colspan="6" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Создать пользователя</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="user-form">
+                <div class="form-group">
+                    <label>Имя пользователя</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль (оставьте пустым для генерации)</label>
+                    <input type="text" id="password" placeholder="Случайный пароль будет сгенерирован">
+                </div>
+                <div class="form-group">
+                    <label>Роль</label>
+                    <select id="role">
+                        <option value="user">Пользователь</option>
+                        <option value="admin">Администратор</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit">Создать</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="mass-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Массовое создание пользователей</h3>
+                <button class="close-btn mass-close">&times;</button>
+            </div>
+            <div class="mass-form">
+                <div class="form-group">
+                    <label>Количество пользователей (1-15)</label>
+                    <input type="range" id="user-count" min="1" max="15" value="5">
+                    <span id="count-value" class="count-value">5</span>
+                </div>
+                <div class="form-group">
+                    <label>Префикс имени (будет добавлен номер)</label>
+                    <input type="text" id="name-prefix" placeholder="student" value="student">
+                </div>
+                <div class="form-group">
+                    <label>Домен email</label>
+                    <input type="text" id="email-domain" placeholder="example.com" value="university.edu">
+                </div>
+                <div class="form-group">
+                    <label>Роль</label>
+                    <select id="mass-role">
+                        <option value="user">Пользователь</option>
+                        <option value="admin">Администратор</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Пароль (оставьте пустым для генерации случайных паролей)</label>
+                    <input type="text" id="mass-password" placeholder="Общий пароль или оставьте пустым">
+                </div>
+                <div id="preview-users" class="preview-users"></div>
+                <button id="submit-mass" class="btn-submit">Создать пользователей</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Пароль пользователя</h3>
+                <button class="close-btn password-close">&times;</button>
+            </div>
+            <div class="password-info">
+                <p><strong>Пользователь:</strong> <span id="pwd-username"></span></p>
+                <p><strong>Пароль:</strong> <code id="pwd-value"></code></p>
+                <p class="warning">Сохраните этот пароль. После закрытия окна он не будет отображаться снова.</p>
+                <button id="copy-pwd-btn" class="btn-primary">Скопировать</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="file-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Управление файлами</h3>
+                <button class="close-btn file-close">&times;</button>
+            </div>
+            <div class="file-manager">
+                <div class="file-upload-area">
+                    <h4>Загрузить файл</h4>
+                    <input type="file" id="upload-file" class="file-input">
+                    <div class="form-group">
+                        <label>Путь в папке files (относительный)</label>
+                        <input type="text" id="upload-path" placeholder="3 курс/Материаловедение/">
+                    </div>
+                    <button id="upload-btn" class="btn-primary">Загрузить</button>
+                </div>
+                <div class="file-list-area">
+                    <h4>Файлы и папки</h4>
+                    <div id="file-browser" class="file-browser">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="rename-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Переименовать файл/папку</h3>
+                <button class="close-btn rename-close">&times;</button>
+            </div>
+            <form id="rename-form">
+                <div class="form-group">
+                    <label>Текущее имя</label>
+                    <input type="text" id="current-name" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Новое имя</label>
+                    <input type="text" id="new-name" required>
+                </div>
+                <input type="hidden" id="rename-path">
+                <button type="submit" class="btn-submit">Переименовать</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="move-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Переместить файл/папку</h3>
+                <button class="close-btn move-close">&times;</button>
+            </div>
+            <form id="move-form">
+                <div class="form-group">
+                    <label>Текущий путь</label>
+                    <input type="text" id="move-current-path" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Новый путь (относительно files)</label>
+                    <input type="text" id="move-new-path" placeholder="3 курс/Новая папка/">
+                </div>
+                <button type="submit" class="btn-submit">Переместить</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="toast-container"></div>
+    
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

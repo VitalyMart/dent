@@ -74,3 +74,8 @@ async def index(request: Request):
 @app.get("/auth.html")
 async def auth_page(request: Request):
     return templates.TemplateResponse("auth.html", {"request": request})
+
+
+@app.get("/admin.html")
+async def admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})

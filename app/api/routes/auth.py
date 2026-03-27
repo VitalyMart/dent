@@ -34,6 +34,25 @@ async def login(
     db.refresh(user)
     
     access_token = create_access_token(data={"sub": user.id, "role": user.role})
+    # app/api/routes/auth.py - после создания access_token
+    access_token = create_access_token(data={"sub": user.id, "role": user.role})
+    print(f"[DEBUG] Created token for user {user.username} with role {user.role}")
+    print(f"[DEBUG] Token: {access_token[:50]}...")
+    # Конвертируем datetime в строки для JSON
+    user_data = {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "last_login": user.last_login.isoformat() if user.last_login else None
+    }
+    
+    response = JSONResponse(content={
+        "message": "Login successful",
+        "user": user_data
+    })
     
     response.set_cookie(
         key="token",
@@ -45,20 +64,52 @@ async def login(
         path="/"
     )
     
-    return {
-        "message": "Login successful",
-        "user": UserResponse.model_validate(user)
-    }
+    return response
 
 @router.post("/logout")
-async def logout(response: Response):
+async def logout():
+    response = JSONResponse(content={"message": "Successfully logged out"})
     response.delete_cookie("token", path="/")
-    return JSONResponse(content={"message": "Successfully logged out"})
+    return response
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
 
 @router.get("/check")
-async def check_auth(current_user: User = Depends(get_current_user)):
-    return {"authenticated": True, "user": UserResponse.model_validate(current_user)}
+async def check_auth(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("token")
+    
+    if not token:
+        return {"authenticated": False}
+    
+    try:
+        from app.auth import decode_token
+        payload = decode_token(token)
+        user_id = payload.get("sub")
+        
+        if user_id is None:
+            return {"authenticated": False}
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        
+        if user is None or not user.is_active:
+            return {"authenticated": False}
+        
+        # Конвертируем datetime в строки для JSON
+        user_data = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None
+        }
+        
+        return {
+            "authenticated": True,
+            "user": user_data
+        }
+    except Exception:
+        return {"authenticated": False}

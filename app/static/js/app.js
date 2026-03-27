@@ -560,7 +560,6 @@ function initSearch() {
     });
 }
 
-// Функция выхода
 function logout() {
     fetch('/auth/logout', {
         method: 'POST',
@@ -570,7 +569,70 @@ function logout() {
     });
 }
 
-function init() {
+async function checkUserRole() {
+    try {
+        const response = await fetch('/auth/check', {
+            credentials: 'same-origin'
+        });
+        
+        if (!response.ok) {
+            return null;
+        }
+        
+        const data = await response.json();
+        if (data.authenticated && data.user && data.user.role === 'admin') {
+            return data.user;
+        }
+        return null;
+    } catch (error) {
+        console.error('Check role error:', error);
+        return null;
+    }
+}
+
+function addAdminButton() {
+    const container = document.getElementById('admin-btn-container');
+    if (!container) return;
+    
+    const adminBtn = document.createElement('button');
+    adminBtn.id = 'admin-btn';
+    adminBtn.className = 'admin-fixed-btn';
+    adminBtn.innerHTML = '<i class="fas fa-crown"></i> Админ панель';
+    adminBtn.style.cssText = `
+        background: #01BB94;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 40px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+        font-family: inherit;
+    `;
+    
+    adminBtn.addEventListener('mouseenter', () => {
+        adminBtn.style.transform = 'translateY(-2px)';
+        adminBtn.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.25)';
+    });
+    
+    adminBtn.addEventListener('mouseleave', () => {
+        adminBtn.style.transform = 'translateY(0)';
+        adminBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+    });
+    
+    adminBtn.addEventListener('click', () => {
+        window.location.href = '/admin.html';
+    });
+    
+    container.appendChild(adminBtn);
+}
+
+async function init() {
     const backBtn = document.getElementById('back-btn');
     const rootPathBtn = document.getElementById('root-path-btn');
     const logoutBtn = document.getElementById('logout-btn');
@@ -595,8 +657,13 @@ function init() {
     
     currentPath = '';
     updatePathDisplay();
-    loadAndDisplayContent('');
+    await loadAndDisplayContent('');
     initSearch();
+    
+    const user = await checkUserRole();
+    if (user && user.role === 'admin') {
+        addAdminButton();
+    }
 }
 
 if (document.readyState === 'loading') {
