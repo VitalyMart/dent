@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserResponse
@@ -19,10 +19,14 @@ def generate_password(length=10):
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
+class CreateUserRequest(BaseModel):
+    username: str
+    password: Optional[str] = None
+    role: str = "user"
+
 class MassUserCreate(BaseModel):
     count: int
     prefix: str
-    domain: str
     role: str = "user"
     common_password: Optional[str] = None
 
@@ -49,28 +53,21 @@ async def get_all_users(
 
 @router.post("/users")
 async def create_user(
-    username: str,
-    email: EmailStr,
-    password: Optional[str] = None,
-    role: str = "user",
+    user_data: CreateUserRequest,
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
-    existing = db.query(User).filter(
-        (User.username == username) | (User.email == email)
-    ).first()
+    existing = db.query(User).filter(User.username == user_data.username).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Username or email already exists")
+        raise HTTPException(status_code=400, detail="Username already exists")
     
-    if not password:
-        password = generate_password()
+    password = user_data.password if user_data.password else generate_password()
     hashed = hash_password(password)
     
     db_user = User(
-        username=username,
-        email=email,
+        username=user_data.username,
         hashed_password=hashed,
-        role=role,
+        role=user_data.role,
         is_active=True
     )
     db.add(db_user)
@@ -80,7 +77,6 @@ async def create_user(
     return {
         "id": db_user.id,
         "username": db_user.username,
-        "email": db_user.email,
         "role": db_user.role,
         "is_active": db_user.is_active,
         "created_at": db_user.created_at,
@@ -102,11 +98,8 @@ async def mass_create_users(
     
     for i in range(1, data.count + 1):
         username = f"{data.prefix}{i}"
-        email = f"{username}@{data.domain}"
         
-        existing = db.query(User).filter(
-            (User.username == username) | (User.email == email)
-        ).first()
+        existing = db.query(User).filter(User.username == username).first()
         if existing:
             errors.append(f"User {username} already exists")
             continue
@@ -116,7 +109,6 @@ async def mass_create_users(
         
         db_user = User(
             username=username,
-            email=email,
             hashed_password=hashed,
             role=data.role,
             is_active=True

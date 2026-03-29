@@ -34,15 +34,10 @@ async def login(
     db.refresh(user)
     
     access_token = create_access_token(data={"sub": user.id, "role": user.role})
-    # app/api/routes/auth.py - после создания access_token
-    access_token = create_access_token(data={"sub": user.id, "role": user.role})
-    print(f"[DEBUG] Created token for user {user.username} with role {user.role}")
-    print(f"[DEBUG] Token: {access_token[:50]}...")
-    # Конвертируем datetime в строки для JSON
+    
     user_data = {
         "id": user.id,
         "username": user.username,
-        "email": user.email,
         "role": user.role,
         "is_active": user.is_active,
         "created_at": user.created_at.isoformat() if user.created_at else None,
@@ -96,11 +91,9 @@ async def check_auth(request: Request, db: Session = Depends(get_db)):
         if user is None or not user.is_active:
             return {"authenticated": False}
         
-        # Конвертируем datetime в строки для JSON
         user_data = {
             "id": user.id,
             "username": user.username,
-            "email": user.email,
             "role": user.role,
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat() if user.created_at else None,

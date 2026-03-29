@@ -25,17 +25,35 @@ async function checkAuth() {
     }
 }
 
+let currentUserId = null;
+
+async function getCurrentUser() {
+    try {
+        const response = await fetch('/auth/check', { credentials: 'same-origin' });
+        if (response.ok) {
+            const data = await response.json();
+            if (data.authenticated && data.user) {
+                currentUserId = data.user.id;
+                return data.user;
+            }
+        }
+    } catch (error) {
+        console.error('Error getting current user:', error);
+    }
+    return null;
+}
+
 async function loadUsers() {
     const tbody = document.getElementById('users-table-body');
     if (!tbody) return;
-    tbody.innerHTML = '=<td colspan="6" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Загрузка...<\/td>';
+    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</td></tr>';
     try {
         const response = await fetch('/admin/users', { credentials: 'same-origin' });
         if (!response.ok) throw new Error();
         const users = await response.json();
         renderUsers(users);
     } catch (error) {
-        tbody.innerHTML = '=<td colspan="6" class="loading-cell">Ошибка загрузки<\/td>';
+        tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">Ошибка загрузки</td></tr>';
         showToast('Ошибка загрузки пользователей', 'error');
     }
 }
@@ -44,26 +62,24 @@ function renderUsers(users) {
     const tbody = document.getElementById('users-table-body');
     if (!tbody) return;
     if (users.length === 0) {
-        tbody.innerHTML = '=<td colspan="6" class="loading-cell">Нет пользователей<\/td>';
+        tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">Нет пользователей</td></tr>';
         return;
     }
-    tbody.innerHTML = users.map(user => `
-        <tr data-user-id="${user.id}">
-            <td>${user.id}</td>
-            <td>${escapeHtml(user.username)}</td>
-            <td>${escapeHtml(user.email)}</td>
-            <td><span class="role-badge ${user.role === 'admin' ? 'role-admin' : 'role-user'}">${user.role === 'admin' ? 'Админ' : 'Пользователь'}</span></td>
-            <td>${formatDate(user.created_at)}</td>
-            <td class="action-buttons">
-                <button class="action-btn reset-pwd" onclick="resetPassword(${user.id}, '${escapeHtml(user.username)}')" title="Сбросить пароль">
-                    <i class="fas fa-key"></i>
-                </button>
-                <button class="action-btn delete" onclick="deleteUser(${user.id})" title="Удалить">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = users.map(user => {
+        const isCurrentUser = user.id === currentUserId;
+        return `
+            <tr data-user-id="${user.id}">
+                <td>${user.id}</td>
+                <td>${escapeHtml(user.username)}</td>
+                <td><span class="role-badge ${user.role === 'admin' ? 'role-admin' : 'role-user'}">${user.role === 'admin' ? 'Админ' : 'Пользователь'}</span></td>
+                <td>${formatDate(user.created_at)}</td>
+                <td class="action-buttons">
+                    ${!isCurrentUser ? `<button class="action-btn reset-pwd" onclick="resetPassword(${user.id}, '${escapeHtml(user.username)}')" title="Сменить пароль"><i class="fas fa-sync-alt"></i></button>` : ''}
+                    <button class="action-btn delete" onclick="deleteUser(${user.id})" title="Удалить"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
@@ -80,13 +96,14 @@ async function deleteUser(userId) {
 }
 
 async function resetPassword(userId, username) {
+    if (!confirm(`Сменить пароль для пользователя ${username}?`)) return;
     try {
         const response = await fetch(`/admin/users/${userId}/reset-password`, { method: 'POST', credentials: 'same-origin' });
         if (!response.ok) throw new Error();
         const data = await response.json();
         showPasswordModal(username, data.password);
     } catch (error) {
-        showToast('Ошибка сброса пароля', 'error');
+        showToast('Ошибка смены пароля', 'error');
     }
 }
 
@@ -137,11 +154,11 @@ async function createUser(userData) {
     } catch (error) { showToast('Ошибка создания', 'error'); }
 }
 
-async function massCreateUsers(count, prefix, domain, role, commonPassword) {
+async function massCreateUsers(count, prefix, role, commonPassword) {
     try {
         const response = await fetch('/admin/users/mass', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin', body: JSON.stringify({ count, prefix, domain, role, common_password: commonPassword || null })
+            credentials: 'same-origin', body: JSON.stringify({ count, prefix, role, common_password: commonPassword || null })
         });
         if (!response.ok) throw new Error();
         const data = await response.json();
@@ -169,8 +186,8 @@ function showUsersListModal(usersList, count) {
                     <h3>Созданные пользователи (${count})</h3>
                     <button class="close-btn users-list-close">&times;</button>
                 </div>
-                <div class="users-list-content">
-                    <textarea id="users-list-textarea" readonly style="width:100%; height:300px; font-family:monospace; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea>
+                <div class="users-list-content" style="padding: 20px;">
+                    <textarea id="users-list-textarea" readonly style="width:100%; height:300px; font-family:monospace; padding:10px; border:1px solid #ddd; border-radius:6px; resize:vertical;"></textarea>
                     <div style="margin-top:15px; display:flex; gap:10px;">
                         <button id="copy-all-users-btn" class="btn-primary">Скопировать все</button>
                         <button id="close-users-list-btn" class="btn-secondary">Закрыть</button>
@@ -363,10 +380,9 @@ function initModals() {
         submitMass.addEventListener('click', () => {
             const count = parseInt(document.getElementById('user-count').value);
             const prefix = document.getElementById('name-prefix').value;
-            const domain = document.getElementById('email-domain').value;
             const role = document.getElementById('mass-role').value;
             const commonPassword = document.getElementById('mass-password').value;
-            massCreateUsers(count, prefix, domain, role, commonPassword);
+            massCreateUsers(count, prefix, role, commonPassword);
         });
     }
 }
@@ -400,6 +416,7 @@ function initFileManager() {
 async function init() {
     const isAdmin = await checkAuth();
     if (isAdmin) {
+        await getCurrentUser();
         await loadUsers();
         initModals();
         initFileManager();
@@ -410,7 +427,6 @@ async function init() {
             e.preventDefault();
             createUser({
                 username: document.getElementById('username').value,
-                email: document.getElementById('email').value,
                 password: document.getElementById('password').value,
                 role: document.getElementById('role').value
             });

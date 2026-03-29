@@ -36,14 +36,13 @@
                         <tr>
                             <th>ID</th>
                             <th>Имя пользователя</th>
-                            <th>Email</th>
                             <th>Роль</th>
                             <th>Дата регистрации</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
-                        <tr><td colspan="6" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</td></tr>
+                        <tr><td colspan="5" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -60,10 +59,6 @@
                 <div class="form-group">
                     <label>Имя пользователя</label>
                     <input type="text" id="username" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="email" required>
                 </div>
                 <div class="form-group">
                     <label>Пароль (оставьте пустым для генерации)</label>
@@ -98,10 +93,6 @@
                     <input type="text" id="name-prefix" placeholder="student" value="student">
                 </div>
                 <div class="form-group">
-                    <label>Домен email</label>
-                    <input type="text" id="email-domain" placeholder="example.com" value="university.edu">
-                </div>
-                <div class="form-group">
                     <label>Роль</label>
                     <select id="mass-role">
                         <option value="user">Пользователь</option>
@@ -112,7 +103,6 @@
                     <label>Пароль (оставьте пустым для генерации случайных паролей)</label>
                     <input type="text" id="mass-password" placeholder="Общий пароль или оставьте пустым">
                 </div>
-                <div id="preview-users" class="preview-users"></div>
                 <button id="submit-mass" class="btn-submit">Создать пользователей</button>
             </div>
         </div>
@@ -124,11 +114,12 @@
                 <h3>Пароль пользователя</h3>
                 <button class="close-btn password-close">&times;</button>
             </div>
-            <div class="password-info">
-                <p><strong>Пользователь:</strong> <span id="pwd-username"></span></p>
-                <p><strong>Пароль:</strong> <code id="pwd-value"></code></p>
-                <p class="warning">Сохраните этот пароль. После закрытия окна он не будет отображаться снова.</p>
-                <button id="copy-pwd-btn" class="btn-primary">Скопировать</button>
+            <div class="password-info" style="padding: 24px;">
+                <p style="margin-bottom: 15px;"><strong>Пользователь:</strong> <span id="pwd-username"></span></p>
+                <p style="margin-bottom: 20px;"><strong>Пароль:</strong> 
+                    <code id="pwd-value" style="background: #f0f0f0; padding: 8px 12px; border-radius: 6px; font-size: 16px; letter-spacing: 1px; display: inline-block;"></code>
+                </p>
+                <button id="copy-pwd-btn" class="btn-primary" style="width: 100%;">Скопировать пароль</button>
             </div>
         </div>
     </div>
