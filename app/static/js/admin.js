@@ -26,6 +26,7 @@ async function checkAuth() {
 }
 
 let currentUserId = null;
+let currentFolderPath = '';
 
 async function getCurrentUser() {
     try {
@@ -218,6 +219,8 @@ function showUsersListModal(usersList, count) {
 async function loadFileBrowser(path = '') {
     const container = document.getElementById('file-browser');
     if (!container) return;
+    currentFolderPath = path;
+    updateCurrentFolderPathDisplay();
     container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</div>';
     try {
         const response = await fetch(`/admin/files?path=${encodeURIComponent(path)}`, { credentials: 'same-origin' });
@@ -229,12 +232,48 @@ async function loadFileBrowser(path = '') {
     }
 }
 
+function updateCurrentFolderPathDisplay() {
+    const displayDiv = document.getElementById('current-folder-path-display');
+    if (!displayDiv) return;
+    if (currentFolderPath === '') {
+        displayDiv.innerHTML = '<i class="fas fa-folder-open"></i> Текущая папка: <strong>Корень</strong>';
+    } else {
+        displayDiv.innerHTML = `<i class="fas fa-folder-open"></i> Текущая папка: <strong>${escapeHtml(currentFolderPath)}</strong>`;
+    }
+}
+
+function copyCurrentFolderPath() {
+    let pathToCopy = '';
+    if (currentFolderPath === '') {
+        pathToCopy = '';
+    } else {
+        pathToCopy = `${currentFolderPath}/`;
+    }
+    
+    navigator.clipboard.writeText(pathToCopy).then(() => {
+        showToast('Путь скопирован: ' + pathToCopy, 'success');
+    }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = pathToCopy;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('Путь скопирован: ' + pathToCopy, 'success');
+    });
+}
+
 function renderFileBrowser(items, currentPath) {
     const container = document.getElementById('file-browser');
     if (!container) return;
     if (currentPath) {
         const parentPath = currentPath.split('/').slice(0, -1).join('/');
-        container.innerHTML = `<button class="folder-item" onclick="loadFileBrowser('${parentPath}')"><i class="fas fa-arrow-up"></i> ..</button>`;
+        const upButton = document.createElement('button');
+upButton.className = 'back-btn-folder';
+upButton.innerHTML = '<div class="file-info"><i class="fas fa-arrow-left"></i><span class="file-name"></span></div>';
+upButton.onclick = () => loadFileBrowser(parentPath);
+        container.innerHTML = '';
+        container.appendChild(upButton);
     } else {
         container.innerHTML = '';
     }
@@ -268,18 +307,68 @@ function getFileIconClass(filename) {
     return 'fa-file';
 }
 
-async function uploadFile(file, relativePath) {
+let selectedFile = null;
+
+function initCustomFileInput() {
+    const customBtn = document.getElementById('custom-file-btn');
+    const fileInput = document.getElementById('upload-file');
+    const displayDiv = document.getElementById('file-name-display');
+    
+    if (!customBtn || !fileInput || !displayDiv) return;
+    
+    customBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        if (fileInput.files && fileInput.files[0]) {
+            selectedFile = fileInput.files[0];
+            const fileName = selectedFile.name;
+            const nameSpan = displayDiv.querySelector('.file-name-text');
+            const icon = displayDiv.querySelector('i');
+            nameSpan.textContent = fileName;
+            displayDiv.setAttribute('title', fileName);
+            icon.className = 'fas fa-check-circle';
+            icon.style.color = '#01BB94';
+        } else {
+            selectedFile = null;
+            const nameSpan = displayDiv.querySelector('.file-name-text');
+            const icon = displayDiv.querySelector('i');
+            nameSpan.textContent = 'Файл не выбран';
+            displayDiv.setAttribute('title', 'Файл не выбран');
+            icon.className = 'fas fa-info-circle';
+            icon.style.color = '#7f8c8d';
+        }
+    });
+}
+
+async function uploadFile() {
+    if (!selectedFile) {
+        showToast('Выберите файл', 'error');
+        return;
+    }
+    const path = document.getElementById('upload-path').value;
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('path', relativePath);
+    formData.append('file', selectedFile);
+    formData.append('path', path);
     try {
         const response = await fetch('/admin/files/upload', {
             method: 'POST', credentials: 'same-origin', body: formData
         });
         if (!response.ok) throw new Error();
         showToast('Файл загружен', 'success');
-        loadFileBrowser(relativePath);
+        loadFileBrowser(path);
+        selectedFile = null;
         document.getElementById('upload-file').value = '';
+        const displayDiv = document.getElementById('file-name-display');
+        if (displayDiv) {
+            const nameSpan = displayDiv.querySelector('.file-name-text');
+            const icon = displayDiv.querySelector('i');
+            nameSpan.textContent = 'Файл не выбран';
+            displayDiv.setAttribute('title', 'Файл не выбран');
+            icon.className = 'fas fa-info-circle';
+            icon.style.color = '#7f8c8d';
+        }
     } catch (error) { showToast('Ошибка загрузки', 'error'); }
 }
 
@@ -405,12 +494,15 @@ function initFileManager() {
     
     const uploadBtn = document.getElementById('upload-btn');
     if (uploadBtn) {
-        uploadBtn.addEventListener('click', () => {
-            const file = document.getElementById('upload-file').files[0];
-            const path = document.getElementById('upload-path').value;
-            if (file) uploadFile(file, path);
-        });
+        uploadBtn.addEventListener('click', uploadFile);
     }
+    
+    const copyPathBtn = document.getElementById('copy-current-path-btn');
+    if (copyPathBtn) {
+        copyPathBtn.addEventListener('click', copyCurrentFolderPath);
+    }
+    
+    initCustomFileInput();
 }
 
 async function init() {
@@ -446,4 +538,67 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
     init();
+}
+
+function initSidebarToggle() {
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('admin-sidebar');
+    
+    if (!toggleBtn || !sidebar) return;
+    
+    let isOpen = false;
+    
+    toggleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (isOpen) {
+            sidebar.classList.remove('open');
+            sidebar.classList.add('close');
+            isOpen = false;
+        } else {
+            sidebar.classList.remove('close');
+            sidebar.classList.add('open');
+            isOpen = true;
+        }
+    });
+    
+    document.addEventListener('click', function(event) {
+        const isMobile = window.innerWidth <= 992;
+        if (isMobile && isOpen) {
+            if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
+                sidebar.classList.remove('open');
+                sidebar.classList.add('close');
+                isOpen = false;
+            }
+        }
+    });
+}
+
+async function init() {
+    const isAdmin = await checkAuth();
+    if (isAdmin) {
+        await getCurrentUser();
+        await loadUsers();
+        initModals();
+        initFileManager();
+        initSidebarToggle();
+    }
+    const userForm = document.getElementById('user-form');
+    if (userForm) {
+        userForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            createUser({
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                role: document.getElementById('role').value
+            });
+        });
+    }
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+                window.location.href = '/auth.html';
+            });
+        });
+    }
 }

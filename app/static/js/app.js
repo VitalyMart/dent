@@ -1,4 +1,3 @@
-// Функции для работы с файлами и интерфейсом
 function getFileExtension(filename) {
     return filename.split('.').pop().toLowerCase();
 }
@@ -56,6 +55,26 @@ function escapeRegex(string) {
 }
 
 let currentModal = null;
+
+function showToastMessage(message, type = 'info') {
+    let container = document.getElementById('toast-message-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-message-container';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    if (type === 'error') toast.classList.add('error');
+    toast.textContent = message;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 function showFullImage(imageUrl, fileName) {
     if (currentModal) {
@@ -123,7 +142,8 @@ function createFileCard(node) {
     
     const nameSpan = document.createElement('div');
     nameSpan.className = 'file-card-name';
-    nameSpan.textContent = node.name.length > 28 ? node.name.substring(0, 25) + '...' : node.name;
+    const maxLength = window.innerWidth < 480 ? 20 : window.innerWidth < 768 ? 25 : 35;
+    nameSpan.textContent = node.name.length > maxLength ? node.name.substring(0, maxLength - 3) + '...' : node.name;
     nameSpan.title = node.name;
     
     card.appendChild(icon);
@@ -132,12 +152,18 @@ function createFileCard(node) {
     const encodedPath = encodeURIComponent(node.path).replace(/%2F/g, '/');
     const url = `/media/${encodedPath}`;
     
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
             showFullImage(url, node.name);
         } else {
             window.open(url, '_blank');
         }
+    });
+    
+    card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showFileContextMenu(e, node);
     });
     
     return card;
@@ -153,17 +179,79 @@ function createFolderCard(node, onClick) {
     
     const nameSpan = document.createElement('div');
     nameSpan.className = 'folder-card-name';
-    nameSpan.textContent = node.name.length > 28 ? node.name.substring(0, 25) + '...' : node.name;
+    const maxLength = window.innerWidth < 480 ? 20 : window.innerWidth < 768 ? 25 : 35;
+    nameSpan.textContent = node.name.length > maxLength ? node.name.substring(0, maxLength - 3) + '...' : node.name;
     nameSpan.title = node.name;
     
     card.appendChild(icon);
     card.appendChild(nameSpan);
     
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+        e.stopPropagation();
         onClick(node.path);
     });
     
     return card;
+}
+
+function showFileContextMenu(event, node) {
+    const existingMenu = document.querySelector('.context-menu');
+    if (existingMenu) existingMenu.remove();
+    
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.style.left = event.clientX + 'px';
+    menu.style.top = event.clientY + 'px';
+    
+    const ext = getFileExtension(node.name);
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
+    
+    menu.innerHTML = `
+        <div class="context-menu-item" data-action="open">
+            <i class="fas fa-eye"></i> Открыть
+        </div>
+        ${isImage ? `<div class="context-menu-item" data-action="copy-url">
+            <i class="fas fa-copy"></i> Копировать URL
+        </div>` : ''}
+        <div class="context-menu-item" data-action="copy-path">
+            <i class="fas fa-link"></i> Копировать путь
+        </div>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    menu.querySelector('[data-action="open"]')?.addEventListener('click', () => {
+        const encodedPath = encodeURIComponent(node.path).replace(/%2F/g, '/');
+        const url = `/media/${encodedPath}`;
+        if (isImage) {
+            showFullImage(url, node.name);
+        } else {
+            window.open(url, '_blank');
+        }
+        menu.remove();
+    });
+    
+    menu.querySelector('[data-action="copy-url"]')?.addEventListener('click', () => {
+        const encodedPath = encodeURIComponent(node.path).replace(/%2F/g, '/');
+        const url = `${window.location.origin}/media/${encodedPath}`;
+        navigator.clipboard.writeText(url);
+        showToastMessage('URL скопирован', 'success');
+        menu.remove();
+    });
+    
+    menu.querySelector('[data-action="copy-path"]')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(node.path);
+        showToastMessage('Путь скопирован', 'success');
+        menu.remove();
+    });
+    
+    const closeMenu = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener('click', closeMenu);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closeMenu), 0);
 }
 
 function createImagesFolderCard(onClick) {
@@ -258,6 +346,16 @@ async function navigateTo(path) {
     updatePathDisplay();
     await loadAndDisplayContent(path);
 }
+
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    if (resizeTimeout) clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        if (currentPath !== undefined) {
+            loadAndDisplayContent(currentPath);
+        }
+    }, 250);
+});
 
 async function loadAndDisplayContent(path) {
     const container = document.getElementById('content-container');

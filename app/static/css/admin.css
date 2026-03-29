@@ -13,6 +13,31 @@ body {
 .admin-container {
     display: flex;
     min-height: 100vh;
+    position: relative;
+}
+
+.sidebar-toggle {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1001;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.sidebar-toggle:hover {
+    background: #01BB94;
 }
 
 .admin-sidebar {
@@ -24,6 +49,8 @@ body {
     left: 0;
     top: 0;
     overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 1000;
 }
 
 .sidebar-header {
@@ -91,6 +118,7 @@ body {
     flex: 1;
     margin-left: 280px;
     padding: 30px;
+    transition: margin-left 0.3s ease;
 }
 
 .admin-header {
@@ -159,6 +187,26 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-copy-path {
+    background: #01BB94;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-copy-path:hover {
+    background: #019B7A;
+    transform: translateY(-1px);
+}
+
 .users-table-container {
     background: white;
     border-radius: 12px;
@@ -169,6 +217,7 @@ body {
 .users-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 500px;
 }
 
 .users-table th,
@@ -281,13 +330,35 @@ body {
 .modal-content {
     background: white;
     border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
+    width: 500px;
+    max-width: 90%;
     animation: slideDown 0.2s ease;
+    position: relative;
 }
 
 .modal-large {
-    max-width: 800px;
+    width: 900px;
+    max-width: 95%;
+    height: 600px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-large .modal-header {
+    flex-shrink: 0;
+}
+
+.modal-large .file-manager {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+}
+
+#rename-modal .modal-content,
+#move-modal .modal-content {
+    width: 500px;
+    max-width: 90%;
 }
 
 @keyframes slideDown {
@@ -330,6 +401,11 @@ body {
     padding: 24px;
 }
 
+#rename-form,
+#move-form {
+    padding: 24px;
+}
+
 .form-group {
     margin-bottom: 18px;
 }
@@ -355,6 +431,29 @@ body {
 .form-group select:focus {
     outline: none;
     border-color: #01BB94;
+}
+
+#rename-form .form-group input,
+#move-form .form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+#rename-form .form-group input:focus,
+#move-form .form-group input:focus {
+    outline: none;
+    border-color: #01BB94;
+    box-shadow: 0 0 0 3px rgba(1, 187, 148, 0.1);
+}
+
+#rename-form .form-group input[readonly],
+#move-form .form-group input[readonly] {
+    background-color: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
 }
 
 .btn-submit {
@@ -397,30 +496,88 @@ body {
     grid-template-columns: 1fr 2fr;
     gap: 20px;
     padding: 20px;
+    height: 100%;
 }
 
 .file-upload-area, .file-list-area {
     background: #f8f9fa;
     padding: 15px;
     border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .file-upload-area h4, .file-list-area h4 {
     margin-bottom: 15px;
     color: #2c3e50;
+    flex-shrink: 0;
 }
 
-.file-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
+.file-browser-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.file-browser-header h4 {
+    margin-bottom: 0;
+}
+
+.current-folder-path {
+    background: white;
+    padding: 8px 12px;
     border-radius: 6px;
+    font-size: 12px;
+    color: #666;
     margin-bottom: 10px;
+    word-break: break-all;
+    border: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+.current-folder-path i {
+    margin-right: 6px;
+    color: #01BB94;
+}
+
+.custom-file-input {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.file-name-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    flex: 1;
+    min-width: 150px;
+}
+
+.file-name-display i {
+    font-size: 18px;
+    color: #7f8c8d;
+}
+
+.file-name-display .file-name-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .file-browser {
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
+    min-height: 300px;
 }
 
 .file-item, .folder-item {
@@ -514,40 +671,405 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+.back-btn-folder {
+    background: transparent;
+    color: #B89A6E;
+    border: 1px solid #E8DCCC;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin-bottom: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.back-btn-folder i {
+    font-size: 14px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.back-btn-folder:hover {
+    background: #FDE3A8;
+    border-color: #D4C4A8;
+}
+
+.back-btn-folder span {
+    display: none;
+}
+
+@media (max-width: 992px) {
+    .sidebar-toggle {
+        display: flex;
+    }
+    
     .admin-sidebar {
-        width: 70px;
+        transform: translateX(-100%);
     }
     
-    .sidebar-header h2 span,
-    .nav-link span {
-        display: none;
-    }
-    
-    .sidebar-header h2 i {
-        margin: 0 auto;
-    }
-    
-    .nav-link {
-        justify-content: center;
-        padding: 12px;
-    }
-    
-    .nav-link i {
-        margin: 0;
-        font-size: 1.2rem;
+    .admin-sidebar.open {
+        transform: translateX(0);
     }
     
     .admin-content {
-        margin-left: 70px;
+        margin-left: 0;
         padding: 20px;
+        padding-top: 70px;
+    }
+    
+    .admin-header {
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-content {
+        padding: 15px;
+        padding-top: 70px;
     }
     
     .admin-header h1 {
         font-size: 1.3rem;
     }
     
+    .admin-header h1 i {
+        font-size: 1.2rem;
+    }
+    
+    .header-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .btn-primary, .btn-secondary {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .users-table th,
+    .users-table td {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .role-badge {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+    }
+    
+    .action-btn {
+        font-size: 0.9rem;
+        padding: 3px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+    }
+    
+    .modal-large {
+        width: 95%;
+        height: 80vh;
+        max-height: 80vh;
+    }
+    
     .file-manager {
         grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .custom-file-input {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .file-browser-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .btn-copy-path {
+        justify-content: center;
+    }
+    
+    .current-folder-path {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+    
+    .file-upload-area, .file-list-area {
+        padding: 12px;
+    }
+    
+    .back-btn-folder {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .back-btn-folder i {
+        font-size: 12px;
+    }
+    
+    .toast-message {
+        bottom: 15px;
+        right: 15px;
+        left: 15px;
+        max-width: none;
+        font-size: 13px;
+        padding: 10px 15px;
     }
 }
+
+@media (max-width: 480px) {
+    .sidebar-toggle {
+        width: 40px;
+        height: 40px;
+        top: 10px;
+        left: 10px;
+        font-size: 18px;
+    }
+    
+    .admin-content {
+        padding: 10px;
+        padding-top: 60px;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .admin-header h1 {
+        font-size: 1.1rem;
+        text-align: center;
+        justify-content: center;
+    }
+    
+    .header-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .users-table th,
+    .users-table td {
+        padding: 8px 10px;
+        font-size: 0.75rem;
+    }
+    
+    .role-badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+    }
+    
+    .action-buttons {
+        gap: 4px;
+    }
+    
+    .action-btn {
+        font-size: 0.8rem;
+    }
+    
+    .modal-header {
+        padding: 15px 18px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1rem;
+    }
+    
+    .close-btn {
+        font-size: 1.2rem;
+    }
+    
+    #user-form, .mass-form,
+    #rename-form, #move-form {
+        padding: 18px;
+    }
+    
+    .form-group {
+        margin-bottom: 14px;
+    }
+    
+    .form-group label {
+        font-size: 0.85rem;
+    }
+    
+    .form-group input,
+    .form-group select {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
+    
+    .file-manager {
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .file-upload-area, .file-list-area {
+        padding: 10px;
+    }
+    
+    .file-name-display {
+        padding: 6px 12px;
+    }
+    
+    .file-name-display i {
+        font-size: 14px;
+    }
+    
+    .file-name-display .file-name-text {
+        font-size: 11px;
+    }
+    
+    .current-folder-path {
+        font-size: 10px;
+        padding: 5px 8px;
+    }
+    
+    .file-item, .folder-item {
+        padding: 6px;
+    }
+    
+    .file-info {
+        gap: 6px;
+    }
+    
+    .file-info i {
+        font-size: 12px;
+        width: 16px;
+    }
+    
+    .file-name {
+        font-size: 11px;
+    }
+    
+    .action-icon {
+        padding: 3px;
+        font-size: 11px;
+    }
+    
+    .back-btn-folder {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 8px;
+    }
+    
+    .back-btn-folder i {
+        font-size: 10px;
+    }
+    
+    .toast-message {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}
+
+.admin-sidebar.open {
+    transform: translateX(0);
+}
+.sidebar-toggle {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1001;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.sidebar-toggle:hover {
+    background: #01BB94;
+}
+
+.admin-sidebar {
+    width: 280px;
+    background: #2c3e50;
+    color: white;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+}
+
+.admin-sidebar.close {
+    transform: translateX(-100%);
+}
+
+.admin-sidebar.open {
+    transform: translateX(0);
+}
+
+.admin-content {
+    flex: 1;
+    margin-left: 280px;
+    padding: 30px;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 992px) {
+    .sidebar-toggle {
+        display: flex;
+    }
+    
+    .admin-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .admin-sidebar.close {
+        transform: translateX(-100%);
+    }
+    
+    .admin-content {
+        margin-left: 0;
+        padding: 20px;
+        padding-top: 70px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar-toggle {
+        width: 40px;
+        height: 40px;
+        top: 10px;
+        left: 10px;
+        font-size: 18px;
+    }
+    
+    .admin-content {
+        padding: 15px;
+        padding-top: 60px;
+    }
+}   

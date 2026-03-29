@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#01BB94">
     <title>Админ панель | Стоматологические материалы</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='75' font-size='70' text-anchor='middle' fill='%2301BB94'%3E🦷%3C/text%3E%3C/svg%3E">
@@ -11,17 +11,21 @@
 </head>
 <body>
     <div class="admin-container">
-        <div class="admin-sidebar">
+        <button id="sidebar-toggle" class="sidebar-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="admin-sidebar" id="admin-sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-crown"></i> Админ панель</h2>
+                <h2><i class="fas fa-crown"></i> <span>Админ панель</span></h2>
             </div>
             <nav class="sidebar-nav">
-                <a href="/" class="nav-link"><i class="fas fa-home"></i> На главную</a>
-                <button id="logout-btn" class="nav-link logout-link"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+                <a href="/" class="nav-link"><i class="fas fa-home"></i> <span>На главную</span></a>
+                <button id="logout-btn" class="nav-link logout-link"><i class="fas fa-sign-out-alt"></i> <span>Выйти</span></button>
             </nav>
         </div>
         
-        <div class="admin-content">
+        <div class="admin-content" id="admin-content">
             <div class="admin-header">
                 <h1><i class="fas fa-users"></i> Управление пользователями</h1>
                 <div class="header-buttons">
@@ -133,7 +137,16 @@
             <div class="file-manager">
                 <div class="file-upload-area">
                     <h4>Загрузить файл</h4>
-                    <input type="file" id="upload-file" class="file-input">
+                    <div class="custom-file-input">
+                        <button type="button" id="custom-file-btn" class="btn-secondary">
+                            <i class="fas fa-folder-open"></i> Выбрать файл
+                        </button>
+                        <div id="file-name-display" class="file-name-display">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="file-name-text">Файл не выбран</span>
+                        </div>
+                        <input type="file" id="upload-file" style="display: none;">
+                    </div>
                     <div class="form-group">
                         <label>Путь в папке files (относительный)</label>
                         <input type="text" id="upload-path" placeholder="3 курс/Материаловедение/">
@@ -141,7 +154,13 @@
                     <button id="upload-btn" class="btn-primary">Загрузить</button>
                 </div>
                 <div class="file-list-area">
-                    <h4>Файлы и папки</h4>
+                    <div class="file-browser-header">
+                        <h4>Файлы и папки</h4>
+                        <button id="copy-current-path-btn" class="btn-copy-path" title="Скопировать путь текущей папки">
+                            <i class="fas fa-copy"></i> Копировать путь
+                        </button>
+                    </div>
+                    <div id="current-folder-path-display" class="current-folder-path"></div>
                     <div id="file-browser" class="file-browser">
                         <div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</div>
                     </div>
