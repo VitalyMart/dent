@@ -2,6 +2,8 @@ import os
 import shutil
 import secrets
 import string
+import logging
+import traceback
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
@@ -12,6 +14,9 @@ from app.models.user import User
 from app.schemas.user import UserResponse
 from app.auth import get_current_admin_user, hash_password
 from app.config import settings
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 MAX_FILE_SIZE = 100 * 1024 * 1024
@@ -158,18 +163,22 @@ async def list_files(
     path: str = "",
     current_user: User = Depends(get_current_admin_user)
 ):
-    files_dir = settings.files_dir.resolve()
-    target_path = files_dir / path if path else files_dir
-    target_path = target_path.resolve()
-    
-    if not str(target_path).startswith(str(files_dir)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    if not target_path.exists():
-        raise HTTPException(status_code=404, detail="Path not found")
-    
-    items = []
     try:
+        files_dir = settings.files_dir.resolve()
+        target_path = files_dir / path if path else files_dir
+        target_path = target_path.resolve()
+        
+        logger.info(f"Listing files in: {target_path}")
+        
+        if not str(target_path).startswith(str(files_dir)):
+            logger.warning(f"Access denied for path: {target_path}")
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if not target_path.exists():
+            logger.warning(f"Path not found: {target_path}")
+            raise HTTPException(status_code=404, detail="Path not found")
+        
+        items = []
         for item in sorted(target_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
             rel_path = str(item.relative_to(files_dir))
             items.append({
@@ -178,10 +187,13 @@ async def list_files(
                 "is_dir": item.is_dir(),
                 "size": item.stat().st_size if item.is_file() else 0
             })
+        
+        logger.info(f"Found {len(items)} items")
+        return {"path": path, "items": items}
     except Exception as e:
+        logger.error(f"Error listing files: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
-    
-    return {"path": path, "items": items}
 
 @router.post("/files/upload")
 async def upload_file(
@@ -189,32 +201,41 @@ async def upload_file(
     path: str = Form(""),
     current_user: User = Depends(get_current_admin_user)
 ):
-    file.file.seek(0, 2)  
-    size = file.file.tell()
-    file.file.seek(0)  
-    
-    if size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE // (1024*1024)} MB")
-    
-    files_dir = settings.files_dir.resolve()
-    target_dir = files_dir / path if path else files_dir
-    target_dir = target_dir.resolve()
-    
-    if not str(target_dir).startswith(str(files_dir)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    target_dir.mkdir(parents=True, exist_ok=True)
-    
-    file_path = target_dir / file.filename
-    if file_path.exists():
-        raise HTTPException(status_code=400, detail="File already exists")
-    
     try:
+        logger.info(f"Uploading file: {file.filename} to path: {path}")
+        
+        file.file.seek(0, 2)  
+        size = file.file.tell()
+        file.file.seek(0)  
+        
+        if size > MAX_FILE_SIZE:
+            logger.warning(f"File too large: {size} bytes")
+            raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE // (1024*1024)} MB")
+        
+        files_dir = settings.files_dir.resolve()
+        target_dir = files_dir / path if path else files_dir
+        target_dir = target_dir.resolve()
+        
+        if not str(target_dir).startswith(str(files_dir)):
+            logger.warning(f"Access denied for directory: {target_dir}")
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        target_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_path = target_dir / file.filename
+        if file_path.exists():
+            logger.warning(f"File already exists: {file_path}")
+            raise HTTPException(status_code=400, detail="File already exists")
+        
         content = await file.read()
         with open(file_path, "wb") as f:
             f.write(content)
+        
+        logger.info(f"File uploaded successfully: {file_path}")
         return {"message": f"File {file.filename} uploaded successfully"}
     except Exception as e:
+        logger.error(f"Error uploading file: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/files/rename")
@@ -222,26 +243,34 @@ async def rename_file(
     data: RenameRequest,
     current_user: User = Depends(get_current_admin_user)
 ):
-    files_dir = settings.files_dir.resolve()
-    old_path = files_dir / data.path
-    old_path = old_path.resolve()
-    
-    if not str(old_path).startswith(str(files_dir)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    if not old_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    parent = old_path.parent
-    new_path = parent / data.new_name
-    
-    if new_path.exists():
-        raise HTTPException(status_code=400, detail="Target already exists")
-    
     try:
+        logger.info(f"Renaming: {data.path} -> {data.new_name}")
+        
+        files_dir = settings.files_dir.resolve()
+        old_path = files_dir / data.path
+        old_path = old_path.resolve()
+        
+        if not str(old_path).startswith(str(files_dir)):
+            logger.warning(f"Access denied for path: {old_path}")
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if not old_path.exists():
+            logger.warning(f"File not found: {old_path}")
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        parent = old_path.parent
+        new_path = parent / data.new_name
+        
+        if new_path.exists():
+            logger.warning(f"Target already exists: {new_path}")
+            raise HTTPException(status_code=400, detail="Target already exists")
+        
         old_path.rename(new_path)
+        logger.info(f"Renamed successfully: {old_path} -> {new_path}")
         return {"message": "Renamed successfully"}
     except Exception as e:
+        logger.error(f"Error renaming file: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/files/move")
@@ -249,31 +278,40 @@ async def move_file(
     data: MoveRequest,
     current_user: User = Depends(get_current_admin_user)
 ):
-    files_dir = settings.files_dir.resolve()
-    old_path = files_dir / data.path
-    old_path = old_path.resolve()
-    
-    if not str(old_path).startswith(str(files_dir)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    if not old_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    new_path = files_dir / data.new_path / old_path.name if data.new_path else files_dir / old_path.name
-    new_path = new_path.resolve()
-    
-    if not str(new_path).startswith(str(files_dir)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    new_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    if new_path.exists():
-        raise HTTPException(status_code=400, detail="Target already exists")
-    
     try:
+        logger.info(f"Moving: {data.path} -> {data.new_path}")
+        
+        files_dir = settings.files_dir.resolve()
+        old_path = files_dir / data.path
+        old_path = old_path.resolve()
+        
+        if not str(old_path).startswith(str(files_dir)):
+            logger.warning(f"Access denied for path: {old_path}")
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if not old_path.exists():
+            logger.warning(f"File not found: {old_path}")
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        new_path = files_dir / data.new_path / old_path.name if data.new_path else files_dir / old_path.name
+        new_path = new_path.resolve()
+        
+        if not str(new_path).startswith(str(files_dir)):
+            logger.warning(f"Access denied for new path: {new_path}")
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        new_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        if new_path.exists():
+            logger.warning(f"Target already exists: {new_path}")
+            raise HTTPException(status_code=400, detail="Target already exists")
+        
         shutil.move(str(old_path), str(new_path))
+        logger.info(f"Moved successfully: {old_path} -> {new_path}")
         return {"message": "Moved successfully"}
     except Exception as e:
+        logger.error(f"Error moving file: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/files/delete")
@@ -281,21 +319,35 @@ async def delete_file(
     data: DeleteRequest,
     current_user: User = Depends(get_current_admin_user)
 ):
-    files_dir = settings.files_dir.resolve()
-    target_path = files_dir / data.path
-    target_path = target_path.resolve()
-    
-    if not str(target_path).startswith(str(files_dir)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    if not target_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    
     try:
+        logger.info(f"Deleting: {data.path} (is_dir: {data.is_dir})")
+        
+        files_dir = settings.files_dir.resolve()
+        target_path = files_dir / data.path
+        target_path = target_path.resolve()
+        
+        logger.info(f"Files dir: {files_dir}")
+        logger.info(f"Target path: {target_path}")
+        logger.info(f"Target exists: {target_path.exists()}")
+        logger.info(f"Path starts with files_dir: {str(target_path).startswith(str(files_dir))}")
+        
+        if not str(target_path).startswith(str(files_dir)):
+            logger.warning(f"Access denied for path: {target_path}")
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if not target_path.exists():
+            logger.warning(f"File not found: {target_path}")
+            raise HTTPException(status_code=404, detail="File not found")
+        
         if data.is_dir:
             shutil.rmtree(target_path)
+            logger.info(f"Deleted directory: {target_path}")
         else:
             target_path.unlink()
+            logger.info(f"Deleted file: {target_path}")
+        
         return {"message": "Deleted successfully"}
     except Exception as e:
+        logger.error(f"Error deleting file: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
