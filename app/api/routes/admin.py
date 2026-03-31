@@ -14,6 +14,7 @@ from app.auth import get_current_admin_user, hash_password
 from app.config import settings
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+MAX_FILE_SIZE = 100 * 1024 * 1024
 
 def generate_password(length=10):
     alphabet = string.ascii_letters + string.digits
@@ -188,6 +189,13 @@ async def upload_file(
     path: str = Form(""),
     current_user: User = Depends(get_current_admin_user)
 ):
+    file.file.seek(0, 2)  
+    size = file.file.tell()
+    file.file.seek(0)  
+    
+    if size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE // (1024*1024)} MB")
+    
     files_dir = settings.files_dir.resolve()
     target_dir = files_dir / path if path else files_dir
     target_dir = target_dir.resolve()

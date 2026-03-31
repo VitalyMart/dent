@@ -4,6 +4,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
+from datetime import datetime
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -14,6 +15,7 @@ from app.config import settings
 from app.database import engine, Base
 from app.api.routes import tree, media, search, auth, admin
 from app.middleware.auth import AuthMiddleware
+
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -40,7 +42,7 @@ app.add_middleware(AuthMiddleware)
 app.add_middleware(CacheControlMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -79,3 +81,7 @@ async def auth_page(request: Request):
 @app.get("/admin.html")
 async def admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}

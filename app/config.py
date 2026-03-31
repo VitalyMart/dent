@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     templates_dir: Path = base_dir / "templates"
     database_url: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/dentistry")
     secret_key: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
-
+    cors_origins: list = os.getenv("CORS_ORIGINS", "http://localhost:8000").split(",")
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
