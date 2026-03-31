@@ -20,7 +20,7 @@ function copyToClipboard(text, successMessage) {
     textarea.focus();
     textarea.select();
     textarea.setSelectionRange(0, 99999);
-    
+
     try {
         const successful = document.execCommand('copy');
         if (successful) {
@@ -31,7 +31,7 @@ function copyToClipboard(text, successMessage) {
     } catch (err) {
         showToast('Ошибка копирования', 'error');
     }
-    
+
     document.body.removeChild(textarea);
 }
 
@@ -140,12 +140,12 @@ function showPasswordModal(username, password) {
     document.getElementById('pwd-username').textContent = username;
     document.getElementById('pwd-value').textContent = password;
     modal.classList.add('show');
-    
+
     const closeModalFn = () => modal.classList.remove('show');
     const closeBtn = modal.querySelector('.password-close');
     if (closeBtn) closeBtn.onclick = closeModalFn;
     modal.onclick = (e) => { if (e.target === modal) closeModalFn(); };
-    
+
     const copyBtn = document.getElementById('copy-pwd-btn');
     if (copyBtn) {
         copyBtn.onclick = () => {
@@ -179,7 +179,7 @@ async function massCreateUsers(count, prefix, role, commonPassword) {
         });
         if (!response.ok) throw new Error();
         const data = await response.json();
-        
+
         if (data.users && data.users.length) {
             let usersList = data.users.map(u => `${u.username}: ${u.password}`).join('\n');
             showUsersListModal(usersList, data.created);
@@ -214,17 +214,17 @@ function showUsersListModal(usersList, count) {
         `;
         document.body.appendChild(modal);
     }
-    
+
     const textarea = modal.querySelector('#users-list-textarea');
     textarea.value = usersList;
-    
+
     modal.classList.add('show');
-    
+
     const closeModal = () => modal.classList.remove('show');
     modal.querySelector('.users-list-close').onclick = closeModal;
     modal.querySelector('#close-users-list-btn').onclick = closeModal;
     modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-    
+
     document.getElementById('copy-all-users-btn').onclick = () => {
         const textArea = modal.querySelector('#users-list-textarea');
         textArea.select();
@@ -277,7 +277,8 @@ function renderFileBrowser(items, currentPath) {
         const parentPath = currentPath.split('/').slice(0, -1).join('/');
         const upButton = document.createElement('button');
         upButton.className = 'back-btn-folder';
-        upButton.innerHTML = '<div class="file-info"><i class="fas fa-arrow-left"></i><span class="file-name"></span></div>';
+        upButton.innerHTML = '<i class="fas fa-arrow-left"></i>';
+        upButton.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 1.2rem; cursor: pointer;';
         upButton.onclick = () => loadFileBrowser(parentPath);
         container.innerHTML = '';
         container.appendChild(upButton);
@@ -307,10 +308,10 @@ function renderFileBrowser(items, currentPath) {
 
 function getFileIconClass(filename) {
     const ext = filename.split('.').pop().toLowerCase();
-    if (['jpg','jpeg','png','gif','webp'].includes(ext)) return 'fa-image';
-    if (['mp4','webm','mov','avi'].includes(ext)) return 'fa-video';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'fa-image';
+    if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return 'fa-video';
     if (['pdf'].includes(ext)) return 'fa-file-pdf';
-    if (['doc','docx'].includes(ext)) return 'fa-file-word';
+    if (['doc', 'docx'].includes(ext)) return 'fa-file-word';
     return 'fa-file';
 }
 
@@ -320,13 +321,13 @@ function initCustomFileInput() {
     const customBtn = document.getElementById('custom-file-btn');
     const fileInput = document.getElementById('upload-file');
     const displayDiv = document.getElementById('file-name-display');
-    
+
     if (!customBtn || !fileInput || !displayDiv) return;
-    
+
     customBtn.addEventListener('click', () => {
         fileInput.click();
     });
-    
+
     fileInput.addEventListener('change', (e) => {
         if (fileInput.files && fileInput.files[0]) {
             selectedFile = fileInput.files[0];
@@ -386,7 +387,7 @@ async function renameFile(path, currentName, isDir) {
     document.getElementById('new-name').value = currentName;
     document.getElementById('rename-path').value = path;
     modal.classList.add('show');
-    
+
     const form = document.getElementById('rename-form');
     const submitHandler = async (e) => {
         e.preventDefault();
@@ -416,7 +417,7 @@ async function moveFile(path, name) {
     if (!modal) return;
     document.getElementById('move-current-path').value = path;
     modal.classList.add('show');
-    
+
     const form = document.getElementById('move-form');
     const submitHandler = async (e) => {
         e.preventDefault();
@@ -498,17 +499,17 @@ function initFileManager() {
     };
     const headerButtons = document.querySelector('.header-buttons');
     if (headerButtons) headerButtons.appendChild(fileBtn);
-    
+
     const uploadBtn = document.getElementById('upload-btn');
     if (uploadBtn) {
         uploadBtn.addEventListener('click', uploadFile);
     }
-    
+
     const copyPathBtn = document.getElementById('copy-current-path-btn');
     if (copyPathBtn) {
         copyPathBtn.addEventListener('click', copyCurrentFolderPath);
     }
-    
+
     initCustomFileInput();
 }
 
@@ -550,12 +551,12 @@ if (document.readyState === 'loading') {
 function initSidebarToggle() {
     const toggleBtn = document.getElementById('sidebar-toggle');
     const sidebar = document.getElementById('admin-sidebar');
-    
+
     if (!toggleBtn || !sidebar) return;
-    
+
     let isOpen = false;
-    
-    toggleBtn.addEventListener('click', function(e) {
+
+    toggleBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         if (isOpen) {
             sidebar.classList.remove('open');
@@ -567,8 +568,8 @@ function initSidebarToggle() {
             isOpen = true;
         }
     });
-    
-    document.addEventListener('click', function(event) {
+
+    document.addEventListener('click', function (event) {
         const isMobile = window.innerWidth <= 992;
         if (isMobile && isOpen) {
             if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
