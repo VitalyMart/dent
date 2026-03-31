@@ -10,6 +10,14 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from pathlib import Path
 import os
+import logging
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 from app.database import engine, Base
@@ -65,7 +73,7 @@ async def startup_event():
     if not files_dir.exists():
         files_dir.mkdir(parents=True, exist_ok=True)
     
-    print(f"Started with FILES_DIR: {files_dir}")
+    logger.info(f"Started with FILES_DIR: {files_dir}")
 
 
 @app.get("/")
