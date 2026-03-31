@@ -9,6 +9,30 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 }
 
+function copyToClipboard(text, successMessage) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.top = '-9999px';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, 99999);
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showToast(successMessage, 'success');
+        } else {
+            showToast('Не удалось скопировать', 'error');
+        }
+    } catch (err) {
+        showToast('Ошибка копирования', 'error');
+    }
+    
+    document.body.removeChild(textarea);
+}
+
 async function checkAuth() {
     try {
         const response = await fetch('/auth/check', { credentials: 'same-origin' });
@@ -124,17 +148,7 @@ function showPasswordModal(username, password) {
     if (copyBtn) {
         copyBtn.onclick = () => {
             const pwdText = document.getElementById('pwd-value').textContent;
-            navigator.clipboard.writeText(pwdText).then(() => {
-                showToast('Пароль скопирован', 'success');
-            }).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = pwdText;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                showToast('Пароль скопирован', 'success');
-            });
+            copyToClipboard(pwdText, 'Пароль скопирован');
         };
     }
 }
@@ -210,7 +224,9 @@ function showUsersListModal(usersList, count) {
     modal.onclick = (e) => { if (e.target === modal) closeModal(); };
     
     document.getElementById('copy-all-users-btn').onclick = () => {
-        textarea.select();
+        const textArea = modal.querySelector('#users-list-textarea');
+        textArea.select();
+        textArea.setSelectionRange(0, 99999);
         document.execCommand('copy');
         showToast('Все пароли скопированы', 'success');
     };
@@ -249,18 +265,7 @@ function copyCurrentFolderPath() {
     } else {
         pathToCopy = `${currentFolderPath}/`;
     }
-    
-    navigator.clipboard.writeText(pathToCopy).then(() => {
-        showToast('Путь скопирован: ' + pathToCopy, 'success');
-    }).catch(() => {
-        const textarea = document.createElement('textarea');
-        textarea.value = pathToCopy;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        showToast('Путь скопирован: ' + pathToCopy, 'success');
-    });
+    copyToClipboard(pathToCopy, 'Путь скопирован: ' + pathToCopy);
 }
 
 function renderFileBrowser(items, currentPath) {
@@ -269,9 +274,9 @@ function renderFileBrowser(items, currentPath) {
     if (currentPath) {
         const parentPath = currentPath.split('/').slice(0, -1).join('/');
         const upButton = document.createElement('button');
-upButton.className = 'back-btn-folder';
-upButton.innerHTML = '<div class="file-info"><i class="fas fa-arrow-left"></i><span class="file-name"></span></div>';
-upButton.onclick = () => loadFileBrowser(parentPath);
+        upButton.className = 'back-btn-folder';
+        upButton.innerHTML = '<div class="file-info"><i class="fas fa-arrow-left"></i><span class="file-name"></span></div>';
+        upButton.onclick = () => loadFileBrowser(parentPath);
         container.innerHTML = '';
         container.appendChild(upButton);
     } else {
@@ -571,34 +576,4 @@ function initSidebarToggle() {
             }
         }
     });
-}
-
-async function init() {
-    const isAdmin = await checkAuth();
-    if (isAdmin) {
-        await getCurrentUser();
-        await loadUsers();
-        initModals();
-        initFileManager();
-        initSidebarToggle();
-    }
-    const userForm = document.getElementById('user-form');
-    if (userForm) {
-        userForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            createUser({
-                username: document.getElementById('username').value,
-                password: document.getElementById('password').value,
-                role: document.getElementById('role').value
-            });
-        });
-    }
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
-                window.location.href = '/auth.html';
-            });
-        });
-    }
 }
