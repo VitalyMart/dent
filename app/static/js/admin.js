@@ -13,9 +13,11 @@ function copyToClipboard(text, successMessage) {
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
-    textarea.style.top = '-9999px';
-    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    textarea.style.left = '0';
+    textarea.style.opacity = '0';
     document.body.appendChild(textarea);
+    textarea.focus();
     textarea.select();
     textarea.setSelectionRange(0, 99999);
     
@@ -71,7 +73,7 @@ async function getCurrentUser() {
 async function loadUsers() {
     const tbody = document.getElementById('users-table-body');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</td></tr>';
+    tbody.innerHTML = '也许<td colspan="5" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Загрузка...</td>';
     try {
         const response = await fetch('/admin/users', { credentials: 'same-origin' });
         if (!response.ok) throw new Error();
