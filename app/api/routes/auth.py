@@ -52,8 +52,8 @@ async def login(
     response.set_cookie(
         key="token",
         value=access_token,
-        httponly=False,
-        secure=True,
+        httponly=True,
+        secure=False,
         samesite="lax",
         max_age=60 * 60 * 24 * 7,
         path="/"
