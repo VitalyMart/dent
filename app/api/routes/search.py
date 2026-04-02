@@ -1,15 +1,17 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from pathlib import Path
 import os
+import logging
 from typing import List, Dict
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
-
 
 def search_files_by_name(
     search_path: Path,
@@ -60,11 +62,10 @@ def search_files_by_name(
                 if len(results) >= max_results:
                     return results
                     
-    except (PermissionError, OSError):
-        pass
+    except (PermissionError, OSError) as e:
+        logger.warning(f"Error accessing {search_path}: {e}")
     
     return results
-
 
 @router.get("/search")
 @limiter.limit("30/minute")
@@ -73,15 +74,20 @@ async def search_files(
     q: str = Query(..., min_length=1, max_length=100),
     max_results: int = Query(50, ge=1, le=100)
 ):
+    logger.info(f"Search query: {q}")
+    
     query = q.strip()
     if not query:
+        logger.warning("Empty search query")
         raise HTTPException(status_code=400, detail="Empty search query")
     
     files_dir_resolved = settings.files_dir.resolve()
     if not files_dir_resolved.exists():
         try:
             files_dir_resolved.mkdir(parents=True, exist_ok=True)
-        except Exception:
+            logger.info(f"Created files directory: {files_dir_resolved}")
+        except Exception as e:
+            logger.error(f"Failed to create files directory: {e}")
             raise HTTPException(status_code=500, detail="Files directory not found and cannot be created")
     
     results = search_files_by_name(
@@ -90,6 +96,8 @@ async def search_files(
         max_results,
         max_depth=5
     )
+    
+    logger.info(f"Search for '{query}' returned {len(results)} results")
     
     return {
         "query": query,

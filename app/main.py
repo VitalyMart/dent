@@ -12,18 +12,13 @@ from pathlib import Path
 import os
 import logging
 
-# Настройка логирования
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from app.logging_config import logger
+from app.middleware.logging import LoggingMiddleware
 
 from app.config import settings
 from app.database import engine, Base
 from app.api.routes import tree, media, search, auth, admin
 from app.middleware.auth import AuthMiddleware
-
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -35,8 +30,8 @@ Base.metadata.create_all(bind=engine)
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    logger.warning(f"Rate limit exceeded for {request.client.host}")
     return _rate_limit_exceeded_handler(request, exc)
-
 
 class CacheControlMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -45,7 +40,7 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
             response.headers["Cache-Control"] = "public, max-age=86400"
         return response
 
-
+app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(CacheControlMiddleware)
 app.add_middleware(
@@ -66,7 +61,6 @@ app.include_router(search.router, prefix="/api", tags=["search"])
 
 templates = Jinja2Templates(directory="app/templates")
 
-
 @app.on_event("startup")
 async def startup_event():
     files_dir = settings.files_dir
@@ -74,17 +68,20 @@ async def startup_event():
         files_dir.mkdir(parents=True, exist_ok=True)
     
     logger.info(f"Started with FILES_DIR: {files_dir}")
+    logger.info(f"DATABASE_URL: {settings.database_url}")
+    logger.info(f"CORS_ORIGINS: {settings.cors_origins}")
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Application shutting down")
 
 @app.get("/")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
 @app.get("/auth.html")
 async def auth_page(request: Request):
     return templates.TemplateResponse("auth.html", {"request": request})
-
 
 @app.get("/admin.html")
 async def admin_page(request: Request):
@@ -92,4 +89,5 @@ async def admin_page(request: Request):
 
 @app.get("/health")
 async def health():
+    logger.debug("Health check called")
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}

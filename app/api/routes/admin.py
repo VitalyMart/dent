@@ -15,7 +15,6 @@ from app.schemas.user import UserResponse
 from app.auth import get_current_admin_user, hash_password
 from app.config import settings
 
-# Настройка логирования
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -54,6 +53,7 @@ async def get_all_users(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"Admin {current_user.username} fetching all users")
     users = db.query(User).all()
     return [UserResponse.model_validate(user) for user in users]
 
@@ -63,8 +63,11 @@ async def create_user(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"Admin {current_user.username} creating user: {user_data.username}")
+    
     existing = db.query(User).filter(User.username == user_data.username).first()
     if existing:
+        logger.warning(f"User creation failed: {user_data.username} already exists")
         raise HTTPException(status_code=400, detail="Username already exists")
     
     password = user_data.password if user_data.password else generate_password()
@@ -79,6 +82,8 @@ async def create_user(
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    logger.info(f"User created: {user_data.username} (role: {user_data.role})")
     
     return {
         "id": db_user.id,
@@ -95,7 +100,10 @@ async def mass_create_users(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"Admin {current_user.username} mass creating {data.count} users with prefix {data.prefix}")
+    
     if data.count < 1 or data.count > 15:
+        logger.warning(f"Mass create invalid count: {data.count}")
         raise HTTPException(status_code=400, detail="Count must be between 1 and 15")
     
     created = 0
@@ -124,6 +132,9 @@ async def mass_create_users(
         created_users.append({"username": username, "password": password})
     
     db.commit()
+    
+    logger.info(f"Mass create completed: {created} users created, {len(errors)} errors")
+    
     return {"created": created, "errors": errors, "users": created_users}
 
 @router.post("/users/{user_id}/reset-password")
@@ -132,13 +143,18 @@ async def reset_user_password(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"Admin {current_user.username} resetting password for user {user_id}")
+    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
+        logger.warning(f"User {user_id} not found for password reset")
         raise HTTPException(status_code=404, detail="User not found")
     
     new_password = generate_password()
     user.hashed_password = hash_password(new_password)
     db.commit()
+    
+    logger.info(f"Password reset for user {user.username}")
     
     return {"username": user.username, "password": new_password}
 
@@ -148,14 +164,21 @@ async def delete_user(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
+    logger.info(f"Admin {current_user.username} deleting user {user_id}")
+    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
+        logger.warning(f"User {user_id} not found for deletion")
         raise HTTPException(status_code=404, detail="User not found")
     if user.id == current_user.id:
+        logger.warning(f"Admin {current_user.username} attempted to delete themselves")
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
     db.delete(user)
     db.commit()
+    
+    logger.info(f"User {user.username} deleted")
+    
     return {"message": f"User {user.username} deleted"}
 
 @router.get("/files")
@@ -163,12 +186,12 @@ async def list_files(
     path: str = "",
     current_user: User = Depends(get_current_admin_user)
 ):
+    logger.info(f"Admin {current_user.username} listing files in path: {path}")
+    
     try:
         files_dir = settings.files_dir.resolve()
         target_path = files_dir / path if path else files_dir
         target_path = target_path.resolve()
-        
-        logger.info(f"Listing files in: {target_path}")
         
         if not str(target_path).startswith(str(files_dir)):
             logger.warning(f"Access denied for path: {target_path}")
@@ -188,7 +211,7 @@ async def list_files(
                 "size": item.stat().st_size if item.is_file() else 0
             })
         
-        logger.info(f"Found {len(items)} items")
+        logger.info(f"Found {len(items)} items in {path}")
         return {"path": path, "items": items}
     except Exception as e:
         logger.error(f"Error listing files: {e}")
@@ -201,12 +224,12 @@ async def upload_file(
     path: str = Form(""),
     current_user: User = Depends(get_current_admin_user)
 ):
+    logger.info(f"Admin {current_user.username} uploading file: {file.filename} to path: {path}")
+    
     try:
-        logger.info(f"Uploading file: {file.filename} to path: {path}")
-        
-        file.file.seek(0, 2)  
+        file.file.seek(0, 2)
         size = file.file.tell()
-        file.file.seek(0)  
+        file.file.seek(0)
         
         if size > MAX_FILE_SIZE:
             logger.warning(f"File too large: {size} bytes")
@@ -243,9 +266,9 @@ async def rename_file(
     data: RenameRequest,
     current_user: User = Depends(get_current_admin_user)
 ):
+    logger.info(f"Admin {current_user.username} renaming: {data.path} -> {data.new_name}")
+    
     try:
-        logger.info(f"Renaming: {data.path} -> {data.new_name}")
-        
         files_dir = settings.files_dir.resolve()
         old_path = files_dir / data.path
         old_path = old_path.resolve()
@@ -278,9 +301,9 @@ async def move_file(
     data: MoveRequest,
     current_user: User = Depends(get_current_admin_user)
 ):
+    logger.info(f"Admin {current_user.username} moving: {data.path} -> {data.new_path}")
+    
     try:
-        logger.info(f"Moving: {data.path} -> {data.new_path}")
-        
         files_dir = settings.files_dir.resolve()
         old_path = files_dir / data.path
         old_path = old_path.resolve()
@@ -319,17 +342,12 @@ async def delete_file(
     data: DeleteRequest,
     current_user: User = Depends(get_current_admin_user)
 ):
+    logger.info(f"Admin {current_user.username} deleting: {data.path} (is_dir: {data.is_dir})")
+    
     try:
-        logger.info(f"Deleting: {data.path} (is_dir: {data.is_dir})")
-        
         files_dir = settings.files_dir.resolve()
         target_path = files_dir / data.path
         target_path = target_path.resolve()
-        
-        logger.info(f"Files dir: {files_dir}")
-        logger.info(f"Target path: {target_path}")
-        logger.info(f"Target exists: {target_path.exists()}")
-        logger.info(f"Path starts with files_dir: {str(target_path).startswith(str(files_dir))}")
         
         if not str(target_path).startswith(str(files_dir)):
             logger.warning(f"Access denied for path: {target_path}")

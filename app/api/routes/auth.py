@@ -2,10 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
+import logging
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserLogin, UserResponse
 from app.auth import verify_password, create_access_token, get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -15,15 +18,19 @@ async def login(
     db: Session = Depends(get_db),
     response: Response = None
 ):
+    logger.info(f"Login attempt: {login_data.username}")
+    
     user = db.query(User).filter(User.username == login_data.username).first()
     
     if not user or not verify_password(login_data.password, user.hashed_password):
+        logger.warning(f"Login failed for {login_data.username}: invalid credentials")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
     
     if not user.is_active:
+        logger.warning(f"Login failed for {login_data.username}: account disabled")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Account is disabled"
@@ -59,10 +66,12 @@ async def login(
         path="/"
     )
     
+    logger.info(f"Login successful: {user.username} (role: {user.role})")
     return response
 
 @router.post("/logout")
 async def logout():
+    logger.info("Logout")
     response = JSONResponse(content={"message": "Successfully logged out"})
     response.delete_cookie("token", path="/")
     return response

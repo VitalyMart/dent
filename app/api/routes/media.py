@@ -1,6 +1,7 @@
 import urllib.parse
 import os
 from pathlib import Path
+import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
@@ -8,6 +9,8 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -37,16 +40,18 @@ _MIME_TYPES = {
     '.md': 'text/markdown',
 }
 
-
 @router.get("/media/{file_path:path}")
 @limiter.limit("60/minute")
 async def serve_media(request: Request, file_path: str):
+    logger.info(f"Media request: {file_path}")
+    
     decoded_path = urllib.parse.unquote(file_path)
     
     try:
         safe_path = os.path.normpath(decoded_path).lstrip('/')
         
         if safe_path.startswith('..') or '..' in safe_path.split(os.sep):
+            logger.warning(f"Access denied for media path: {file_path}")
             raise HTTPException(status_code=403, detail="Access denied")
         
         files_dir_resolved = settings.files_dir.resolve()
@@ -54,20 +59,25 @@ async def serve_media(request: Request, file_path: str):
         full_path = full_path.resolve()
         
         if not str(full_path).startswith(str(files_dir_resolved)):
+            logger.warning(f"Access denied for media path: {full_path}")
             raise HTTPException(status_code=403, detail="Access denied")
             
         file_size = full_path.stat().st_size
         if file_size > 500 * 1024 * 1024:
+            logger.warning(f"File too large: {file_path} ({file_size} bytes)")
             raise HTTPException(status_code=413, detail="File too large")
             
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error accessing media: {e}")
         raise HTTPException(status_code=403, detail="Access denied")
 
     if not full_path.exists():
+        logger.warning(f"Media file not found: {file_path}")
         raise HTTPException(status_code=404, detail="File not found")
     if full_path.is_dir():
+        logger.warning(f"Cannot serve directory as media: {file_path}")
         raise HTTPException(status_code=400, detail="Cannot serve directory")
 
     ext = full_path.suffix.lower()
@@ -104,8 +114,8 @@ async def serve_media(request: Request, file_path: str):
                         "Cache-Control": "public, max-age=86400"
                     }
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Error processing range request: {e}")
         
         return StreamingResponse(
             open(full_path, "rb"),
